@@ -41,6 +41,8 @@ dependencies:
   intl: ^0.20.3
   flutter_localizations:
     sdk: flutter
+  cloud_functions: ^6.5.0
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:

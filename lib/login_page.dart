@@ -1,6 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'line_login.dart';
+
+const _lineGreen = Color(0xFF06C755);
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -15,6 +19,23 @@ class _LoginPageState extends State<LoginPage> {
   bool _isSignUp = false;
   bool _busy = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    if (isLineLoginConfigured) _finishLineLogin();
+  }
+
+  /// LINE の認可画面から戻ってきたときの続き。
+  Future<void> _finishLineLogin() async {
+    setState(() => _busy = true);
+    final result = await completeLineLoginIfNeeded();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      if (result is LineLoginFailure) _error = result.message;
+    });
+  }
 
   @override
   void dispose() {
@@ -114,6 +135,18 @@ class _LoginPageState extends State<LoginPage> {
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 32),
+                  if (isLineLoginConfigured) ...[
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _lineGreen,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      onPressed: _busy ? null : startLineLogin,
+                      child: const Text('LINE でログイン'),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   OutlinedButton.icon(
                     onPressed: _busy ? null : _signInWithGoogle,
                     icon: const Icon(Icons.account_circle),
