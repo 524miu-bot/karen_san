@@ -72,12 +72,16 @@ class LineLoginFailure extends LineLoginResult {
   final String message;
 }
 
+/// LINE の認可画面から戻ってきたページか（アドレスに ?code=… か ?error=… がある）。
+bool get isReturningFromLine {
+  final params = Uri.base.queryParameters;
+  return params.containsKey('code') || params.containsKey('error');
+}
+
 /// アドレスに LINE からの戻り（?code=…&state=…）があれば、Firebase にログインする。
 Future<LineLoginResult> completeLineLoginIfNeeded() async {
+  if (!isReturningFromLine) return LineLoginNone();
   final params = Uri.base.queryParameters;
-  if (!params.containsKey('code') && !params.containsKey('error')) {
-    return LineLoginNone();
-  }
 
   final expectedState = browser.sessionGet(_stateKey);
   final nonce = browser.sessionGet(_nonceKey);
