@@ -29,6 +29,13 @@ service cloud.firestore {
         .affectedKeys().hasOnly([request.auth.uid]);
     }
 
+    // 自分の色だけを変更しているか
+    function onlyOwnColorChanged() {
+      return request.resource.data.get('memberColors', {})
+        .diff(resource.data.get('memberColors', {}))
+        .affectedKeys().hasOnly([request.auth.uid]);
+    }
+
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
     }
@@ -51,10 +58,11 @@ service cloud.firestore {
         && request.resource.data.inviteCode is string;
 
       allow update: if signedIn() && (
-        // メンバーはグループ名と自分の表示名を変更できる
+        // メンバーはグループ名と、自分の表示名・色を変更できる
         (request.auth.uid in resource.data.memberIds
-          && changedKeys().hasOnly(['name', 'memberNames'])
-          && onlyOwnNameChanged())
+          && changedKeys().hasOnly(['name', 'memberNames', 'memberColors'])
+          && onlyOwnNameChanged()
+          && onlyOwnColorChanged())
         ||
         // メンバー以外は、正しい招待コードを添えて自分を追加することだけできる
         (!(request.auth.uid in resource.data.memberIds)
@@ -70,6 +78,7 @@ service cloud.firestore {
           return e.title is string && e.title.size() > 0 && e.title.size() <= 100
             && e.start is timestamp && e.end is timestamp && e.end > e.start
             && e.allDay is bool
+            && e.get('ownerId', '') is string
             && e.note is string && e.note.size() <= 2000;
         }
 

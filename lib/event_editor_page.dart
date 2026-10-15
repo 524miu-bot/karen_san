@@ -9,14 +9,12 @@ import 'repository.dart';
 class EventEditorPage extends StatefulWidget {
   const EventEditorPage({
     super.key,
-    required this.familyId,
-    required this.myName,
+    required this.family,
     required this.initialDay,
     this.event,
   });
 
-  final String familyId;
-  final String myName;
+  final Family family;
   final DateTime initialDay;
   final CalendarEvent? event;
 
@@ -32,15 +30,21 @@ class _EventEditorPageState extends State<EventEditorPage> {
   late bool _allDay;
   late DateTime _start;
   late DateTime _end;
+  late String _ownerId;
   bool _busy = false;
   String? _error;
 
+  final _uid = FirebaseAuth.instance.currentUser!.uid;
+
   bool get _isNew => widget.event == null;
+
+  String get _familyId => widget.family.id;
 
   @override
   void initState() {
     super.initState();
     final e = widget.event;
+    _ownerId = e?.owner ?? _uid;
     if (e != null) {
       _allDay = e.allDay;
       _start = e.start;
@@ -109,7 +113,6 @@ class _EventEditorPageState extends State<EventEditorPage> {
       setState(() => _error = '終了は開始より後にしてください。');
       return;
     }
-    final uid = FirebaseAuth.instance.currentUser!.uid;
     final event = CalendarEvent(
       id: widget.event?.id,
       title: title,
@@ -117,15 +120,17 @@ class _EventEditorPageState extends State<EventEditorPage> {
       end: end,
       allDay: _allDay,
       note: _noteController.text.trim(),
-      createdBy: widget.event?.createdBy ?? uid,
-      createdByName: widget.event?.createdByName ?? widget.myName,
+      createdBy: widget.event?.createdBy ?? _uid,
+      createdByName:
+          widget.event?.createdByName ?? widget.family.nameOf(_uid),
+      ownerId: _ownerId,
     );
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      await Repository.instance.saveEvent(widget.familyId, event);
+      await Repository.instance.saveEvent(_familyId, event);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       setState(() {
@@ -156,7 +161,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
     if (ok != true) return;
     setState(() => _busy = true);
     try {
-      await Repository.instance.deleteEvent(widget.familyId, widget.event!.id!);
+      await Repository.instance.deleteEvent(_familyId, widget.event!.id!);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       setState(() {
@@ -198,6 +203,31 @@ class _EventEditorPageState extends State<EventEditorPage> {
                   border: OutlineInputBorder(),
                 ),
               ),
+              Text('誰の予定？', style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final id in [
+                    ...widget.family.memberIds,
+                    CalendarEvent.everyone,
+                    // 退出したメンバーの予定を編集するときも選択肢に残す
+                    if (_ownerId != CalendarEvent.everyone &&
+                        !widget.family.memberIds.contains(_ownerId))
+                      _ownerId,
+                  ])
+                    ChoiceChip(
+                      avatar: CircleAvatar(
+                          backgroundColor: widget.family.colorOf(id)),
+                      label: Text(widget.family.nameOf(id)),
+                      selected: _ownerId == id,
+                      showCheckmark: false,
+                      onSelected: (_) => setState(() => _ownerId = id),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('終日'),

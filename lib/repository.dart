@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/painting.dart';
 
 import 'models.dart';
 
@@ -90,6 +91,9 @@ class Repository {
     await batch.commit();
     return true;
   }
+
+  Future<void> setMyColor(String familyId, String uid, Color color) =>
+      _familyDoc(familyId).update({'memberColors.$uid': color.toARGB32()});
 
   /// [from] 以降・[to] より前に始まる予定。
   Stream<List<CalendarEvent>> watchEvents(
