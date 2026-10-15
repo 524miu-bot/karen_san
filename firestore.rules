@@ -1,0 +1,84 @@
+rules_version = '2';
+
+// カレンさんのセキュリティルール
+// - users/{uid}              : 本人だけが読み書きできる
+// - families/{familyId}      : メンバーだけが読める。参加は正しい招待コードを知っている人だけ
+// - families/{id}/events/{id}: メンバーだけが読み書きできる
+// - invites/{code}           : コードを知っている人だけが 1 件取得できる（一覧は不可）
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function familyPath(familyId) {
+      return /databases/$(database)/documents/families/$(familyId);
+    }
+
+    function isMember(familyId) {
+      return signedIn() && request.auth.uid in get(familyPath(familyId)).data.memberIds;
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // 自分の表示名だけを変更しているか
+    function onlyOwnNameChanged() {
+      return request.resource.data.memberNames.diff(resource.data.memberNames)
+        .affectedKeys().hasOnly([request.auth.uid]);
+    }
+
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow create: if signedIn()
+        && getAfter(familyPath(request.resource.data.familyId)).data.inviteCode == code
+        && request.auth.uid in getAfter(familyPath(request.resource.data.familyId)).data.memberIds;
+    }
+
+    match /families/{familyId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.memberIds;
+
+      allow create: if signedIn()
+        && request.resource.data.memberIds == [request.auth.uid]
+        && request.resource.data.memberNames.keys().hasOnly([request.auth.uid])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 50
+        && request.resource.data.inviteCode is string;
+
+      allow update: if signedIn() && (
+        // メンバーはグループ名と自分の表示名を変更できる
+        (request.auth.uid in resource.data.memberIds
+          && changedKeys().hasOnly(['name', 'memberNames'])
+          && onlyOwnNameChanged())
+        ||
+        // メンバー以外は、正しい招待コードを添えて自分を追加することだけできる
+        (!(request.auth.uid in resource.data.memberIds)
+          && changedKeys().hasOnly(['memberIds', 'memberNames', 'joinCode'])
+          && request.resource.data.memberIds == resource.data.memberIds.concat([request.auth.uid])
+          && onlyOwnNameChanged()
+          && request.resource.data.joinCode == resource.data.inviteCode)
+      );
+
+      match /events/{eventId} {
+        function validEvent() {
+          let e = request.resource.data;
+          return e.title is string && e.title.size() > 0 && e.title.size() <= 100
+            && e.start is timestamp && e.end is timestamp && e.end > e.start
+            && e.allDay is bool
+            && e.note is string && e.note.size() <= 2000;
+        }
+
+        allow read, delete: if isMember(familyId);
+        allow create: if isMember(familyId) && validEvent()
+          && request.resource.data.createdBy == request.auth.uid;
+        allow update: if isMember(familyId) && validEvent()
+          && request.resource.data.createdBy == resource.data.createdBy;
+      }
+    }
+  }
+}
