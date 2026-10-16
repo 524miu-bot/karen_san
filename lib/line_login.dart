@@ -96,7 +96,8 @@ Future<LineLoginResult> completeLineLoginIfNeeded() async {
   }
   final code = params['code']!;
   if (expectedState == null || nonce == null || params['state'] != expectedState) {
-    return LineLoginFailure('LINE ログインの確認に失敗しました。もう一度お試しください。');
+    return LineLoginFailure(
+        'LINE ログインの確認に失敗しました（state）。もう一度お試しください。');
   }
 
   try {
