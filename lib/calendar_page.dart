@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import 'event_editor_page.dart';
+import 'family_settings_page.dart';
 import 'holidays.dart';
 import 'models.dart';
 import 'repository.dart';
@@ -177,10 +177,10 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   void _showFamily(Family family) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => _FamilyDialog(family: family, uid: widget.user.uid),
-    );
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) =>
+          FamilySettingsPage(familyId: family.id, uid: widget.user.uid),
+    ));
   }
 
   @override
@@ -195,7 +195,7 @@ class _CalendarPageState extends State<CalendarPage> {
             actions: [
               if (family != null)
                 IconButton(
-                  tooltip: 'メンバーと招待',
+                  tooltip: 'メンバー・予定者',
                   icon: const Icon(Icons.group_add_outlined),
                   onPressed: () => _showFamily(family),
                 ),
@@ -536,101 +536,6 @@ class _EventTile extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// メンバー一覧・招待コード・自分の色の変更。
-class _FamilyDialog extends StatelessWidget {
-  const _FamilyDialog({required this.family, required this.uid});
-
-  final Family family;
-  final String uid;
-
-  @override
-  Widget build(BuildContext context) {
-    // 色を変えたらすぐ反映されるよう、ダイアログの中でも家族の変更を受け取る。
-    return StreamBuilder<Family>(
-      stream: Repository.instance.watchFamily(family.id),
-      initialData: family,
-      builder: (context, snap) {
-        final f = snap.data!;
-        final myColor = f.colorOf(uid);
-        return AlertDialog(
-          title: Text(f.name),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('招待コード'),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    SelectableText(
-                      f.inviteCode,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    IconButton(
-                      tooltip: 'コピー',
-                      icon: const Icon(Icons.copy),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: f.inviteCode));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('招待コードをコピーしました')),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                const Text('家族にこのコードを伝えると、同じカレンダーに参加できます。'),
-                const SizedBox(height: 20),
-                const Text('メンバー'),
-                for (final id in f.memberIds)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Row(
-                      children: [
-                        CircleAvatar(radius: 8, backgroundColor: f.colorOf(id)),
-                        const SizedBox(width: 8),
-                        Text(f.nameOf(id) + (id == uid ? '（あなた）' : '')),
-                      ],
-                    ),
-                  ),
-                const SizedBox(height: 20),
-                const Text('あなたの色'),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final c in memberPalette)
-                      InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () =>
-                            Repository.instance.setMyColor(f.id, uid, c),
-                        child: CircleAvatar(
-                          radius: 16,
-                          backgroundColor: c,
-                          child: c.toARGB32() == myColor.toARGB32()
-                              ? const Icon(Icons.check,
-                                  color: Colors.white, size: 18)
-                              : null,
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('閉じる'),
-            ),
-          ],
-        );
-      },
     );
   }
 }

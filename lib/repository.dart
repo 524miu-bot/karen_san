@@ -10,7 +10,8 @@ import 'models.dart';
 ///
 /// データ構成:
 /// - users/{uid}               … { familyId }
-/// - families/{familyId}       … { name, inviteCode, memberIds, memberNames }
+/// - families/{familyId}       … { name, inviteCode, memberIds, memberNames,
+///                                  memberColors, people（ログインしない予定者） }
 /// - families/{id}/events/{id} … 予定
 /// - invites/{inviteCode}      … { familyId }（招待コードから家族を探す）
 class Repository {
@@ -94,6 +95,34 @@ class Repository {
 
   Future<void> setMyColor(String familyId, String uid, Color color) =>
       _familyDoc(familyId).update({'memberColors.$uid': color.toARGB32()});
+
+  Future<void> setMyName(String familyId, String uid, String name) =>
+      _familyDoc(familyId).update({'memberNames.$uid': name});
+
+  /// ログインしない予定者を追加し、その ID を返す。
+  Future<String> addPerson(String familyId, String name, {Color? color}) async {
+    final id = 'p_${_db.collection('_').doc().id}';
+    await _familyDoc(familyId).update({
+      'people.$id': {
+        'name': name,
+        if (color != null) 'color': color.toARGB32(),
+        'order': DateTime.now().millisecondsSinceEpoch,
+      },
+    });
+    return id;
+  }
+
+  Future<void> updatePerson(String familyId, String personId,
+      {String? name, Color? color}) {
+    return _familyDoc(familyId).update({
+      'people.$personId.name': ?name,
+      if (color != null) 'people.$personId.color': color.toARGB32(),
+    });
+  }
+
+  /// 予定者を削除する。その人の予定は残り、「（いなくなった人）」として表示される。
+  Future<void> removePerson(String familyId, String personId) =>
+      _familyDoc(familyId).update({'people.$personId': FieldValue.delete()});
 
   /// [from] 以降・[to] より前に始まる予定。
   Stream<List<CalendarEvent>> watchEvents(

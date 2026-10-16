@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'family_settings_page.dart';
 import 'models.dart';
 import 'repository.dart';
 
@@ -39,6 +40,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
   bool get _isNew => widget.event == null;
 
   String get _familyId => widget.family.id;
+
+  late final Stream<Family> _familyStream =
+      Repository.instance.watchFamily(widget.family.id);
 
   @override
   void initState() {
@@ -205,27 +209,43 @@ class _EventEditorPageState extends State<EventEditorPage> {
               ),
               Text('誰の予定？', style: Theme.of(context).textTheme.labelLarge),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final id in [
-                    ...widget.family.memberIds,
-                    CalendarEvent.everyone,
-                    // 退出したメンバーの予定を編集するときも選択肢に残す
-                    if (_ownerId != CalendarEvent.everyone &&
-                        !widget.family.memberIds.contains(_ownerId))
-                      _ownerId,
-                  ])
-                    ChoiceChip(
-                      avatar: CircleAvatar(
-                          backgroundColor: widget.family.colorOf(id)),
-                      label: Text(widget.family.nameOf(id)),
-                      selected: _ownerId == id,
-                      showCheckmark: false,
-                      onSelected: (_) => setState(() => _ownerId = id),
-                    ),
-                ],
+              // 予定者を追加・変更したらすぐ選択肢に出るよう、家族の変更を受け取る。
+              StreamBuilder<Family>(
+                stream: _familyStream,
+                initialData: widget.family,
+                builder: (context, snap) {
+                  final family = snap.data!;
+                  final ids = family.ownerIds;
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final id in [
+                        ...ids,
+                        // いなくなった人の予定を編集するときも選択肢に残す
+                        if (!ids.contains(_ownerId)) _ownerId,
+                      ])
+                        ChoiceChip(
+                          avatar: CircleAvatar(
+                              backgroundColor: family.colorOf(id)),
+                          label: Text(family.nameOf(id)),
+                          selected: _ownerId == id,
+                          showCheckmark: false,
+                          onSelected: (_) => setState(() => _ownerId = id),
+                        ),
+                      ActionChip(
+                        avatar: const Icon(Icons.add, size: 18),
+                        label: const Text('予定者を追加'),
+                        onPressed: () async {
+                          final id = await addPersonFlow(context, family);
+                          if (id != null && mounted) {
+                            setState(() => _ownerId = id);
+                          }
+                        },
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 8),
               SwitchListTile(
@@ -264,7 +284,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
               ),
               if (!_isNew && widget.event!.createdByName.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text('登録した人：${widget.event!.createdByName}'),
+                Text('登録した人：${widget.family.memberNames[widget.event!.createdBy] ?? widget.event!.createdByName}'),
               ],
               if (_error != null) ...[
                 const SizedBox(height: 12),

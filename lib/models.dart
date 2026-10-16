@@ -17,6 +17,20 @@ const memberPalette = <Color>[
 /// 「みんなの予定」の色。
 const everyoneColor = Color(0xFF546E7A);
 
+/// アプリにログインしない予定者（子どもなど）。グループのメンバーなら誰でも追加・編集できる。
+class Person {
+  Person({required this.id, required this.name, this.color, this.order = 0});
+
+  final String id;
+  final String name;
+
+  /// 選んだ色（ARGB の数値）。null なら自動で割り当てる。
+  final int? color;
+
+  /// 並び順（追加した順）。
+  final int order;
+}
+
 /// 予定を共有するグループ（家族など）。
 class Family {
   Family({
@@ -26,19 +40,35 @@ class Family {
     required this.memberIds,
     required this.memberNames,
     this.memberColors = const {},
+    this.people = const {},
   });
 
   final String id;
   final String name;
   final String inviteCode;
+
+  /// ログインして参加しているメンバー。
   final List<String> memberIds;
   final Map<String, String> memberNames;
 
   /// メンバーが自分で選んだ色（ARGB の数値）。
   final Map<String, int> memberColors;
 
+  /// ログインしない予定者。
+  final Map<String, Person> people;
+
   factory Family.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
+    final people = <String, Person>{};
+    (d['people'] as Map? ?? const {}).forEach((k, v) {
+      final p = v as Map;
+      people[k as String] = Person(
+        id: k,
+        name: p['name'] as String? ?? '',
+        color: (p['color'] as num?)?.toInt(),
+        order: (p['order'] as num?)?.toInt() ?? 0,
+      );
+    });
     return Family(
       id: doc.id,
       name: d['name'] as String? ?? '',
@@ -47,20 +77,37 @@ class Family {
       memberNames: Map<String, String>.from(d['memberNames'] as Map? ?? const {}),
       memberColors: (d['memberColors'] as Map? ?? const {})
           .map((k, v) => MapEntry(k as String, (v as num).toInt())),
+      people: people,
     );
   }
 
+  /// ログインしない予定者の ID（追加した順）。
+  List<String> get personIds => (people.values.toList()
+        ..sort((a, b) => a.order.compareTo(b.order)))
+      .map((p) => p.id)
+      .toList();
+
+  /// 予定を割り当てられる人すべて（メンバー → ログインしない予定者 → みんな）。
+  List<String> get ownerIds =>
+      [...memberIds, ...personIds, CalendarEvent.everyone];
+
   String nameOf(String ownerId) {
     if (ownerId == CalendarEvent.everyone) return 'みんな';
-    return memberNames[ownerId] ?? '（退出したメンバー）';
+    return memberNames[ownerId] ??
+        people[ownerId]?.name ??
+        '（いなくなった人）';
   }
 
   Color colorOf(String ownerId) {
     if (ownerId == CalendarEvent.everyone) return everyoneColor;
-    final chosen = memberColors[ownerId];
+    final chosen = memberColors[ownerId] ?? people[ownerId]?.color;
     if (chosen != null) return Color(chosen);
-    final index = memberIds.indexOf(ownerId);
-    if (index < 0) return everyoneColor;
+    var index = memberIds.indexOf(ownerId);
+    if (index < 0) {
+      final p = personIds.indexOf(ownerId);
+      if (p < 0) return everyoneColor;
+      index = memberIds.length + p;
+    }
     return memberPalette[index % memberPalette.length];
   }
 }
