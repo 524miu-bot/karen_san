@@ -69,6 +69,7 @@ flutter:
   # LINE 公式のログインボタン画像（LINE ログインボタン デザインガイドラインに同意のうえ取得）
   assets:
     - assets/line/
+    - assets/branding/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

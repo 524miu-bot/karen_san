@@ -128,6 +128,13 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const Center(
+                    child: CircleAvatar(
+                      radius: 48,
+                      backgroundImage: AssetImage('assets/branding/karen.png'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     'カレンさん',
                     textAlign: TextAlign.center,
