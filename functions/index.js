@@ -70,3 +70,19 @@ exports.lineLogin = onCall(
       return {token};
     },
 );
+
+const {getFirestore} = require("firebase-admin/firestore");
+const {deleteAccount} = require("./account");
+
+// アカウント削除（アプリの設定画面から呼ぶ）。本人のアカウントだけを削除できる。
+exports.deleteAccount = onCall({region: "asia-northeast1"}, async (request) => {
+  const uid = request.auth && request.auth.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "ログインが必要です");
+  try {
+    await deleteAccount({db: getFirestore(), auth: getAuth(), uid});
+  } catch (e) {
+    logger.error("アカウント削除に失敗", {uid, message: e.message});
+    throw new HttpsError("internal", "削除できませんでした。時間をおいてもう一度お試しください。");
+  }
+  return {ok: true};
+});

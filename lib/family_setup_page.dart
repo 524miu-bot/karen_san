@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'account_deletion.dart';
 import 'repository.dart';
 
 /// 家族に未所属のときに表示する。新しく作るか、招待コードで参加する。
@@ -158,6 +159,20 @@ class _FamilySetupPageState extends State<FamilySetupPage> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 40),
+                Center(
+                  child: TextButton(
+                    onPressed: _busy
+                        ? null
+                        : () => confirmAndDeleteAccount(context),
+                    child: Text(
+                      'アカウントを削除',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'account_deletion.dart';
 import 'models.dart';
 import 'repository.dart';
 import 'oshi_page.dart';
@@ -344,6 +345,22 @@ class FamilySettingsPage extends StatelessWidget {
                               );
                             },
                           ),
+                        ),
+                        const Divider(),
+                        _header(context, 'アカウント'),
+                        ListTile(
+                          leading: Icon(
+                            Icons.person_remove_outlined,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          title: Text(
+                            'アカウントを削除',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                          subtitle: const Text('あなたのデータを削除して、ログアウトします。'),
+                          onTap: () => confirmAndDeleteAccount(context),
                         ),
                       ],
                     ),
