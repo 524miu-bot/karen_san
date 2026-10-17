@@ -55,15 +55,20 @@ void main() {
       final missing = theirs.keys.where((d) => !ours.containsKey(d));
       final extra = ours.keys.where((d) => !theirs.containsKey(d));
       final wrongName = theirs.keys.where(
-          (d) => ours.containsKey(d) && !_sameName(theirs[d]!, ours[d]!));
+        (d) => ours.containsKey(d) && !_sameName(theirs[d]!, ours[d]!),
+      );
 
       String show(Iterable<DateTime> ds, Map<DateTime, String> names) =>
           ds.map((d) => '${d.month}/${d.day} ${names[d]}').join(', ');
 
       expect(missing, isEmpty, reason: '足りない祝日: ${show(missing, theirs)}');
       expect(extra, isEmpty, reason: '余分な祝日: ${show(extra, ours)}');
-      expect(wrongName, isEmpty,
-          reason: '名前が違う: ${wrongName.map((d) => '${d.month}/${d.day} 公式=${theirs[d]} アプリ=${ours[d]}').join(', ')}');
+      expect(
+        wrongName,
+        isEmpty,
+        reason:
+            '名前が違う: ${wrongName.map((d) => '${d.month}/${d.day} 公式=${theirs[d]} アプリ=${ours[d]}').join(', ')}',
+      );
     });
   }
 }

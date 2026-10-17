@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'google_login.dart';
 import 'line_login.dart';
 import 'line_login_button.dart';
 
@@ -22,7 +24,9 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    if (isLineLoginConfigured && isReturningFromLine) _finishLineLogin();
+    if (kIsWeb && isLineLoginConfigured && isReturningFromLine) {
+      _finishLineLogin();
+    }
   }
 
   /// LINE の認可画面から戻ってきたときの続き。
@@ -52,6 +56,9 @@ class _LoginPageState extends State<LoginPage> {
       await action();
     } on FirebaseAuthException catch (e) {
       setState(() => _error = _messageFor(e));
+    } catch (e) {
+      // 端末の Google ログインのエラーなど
+      if (mounted) setState(() => _error = 'ログインできませんでした（$e）。');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -76,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _signInWithGoogle() async {
     await _run(() async {
-      await FirebaseAuth.instance.signInWithPopup(GoogleAuthProvider());
+      await signInWithGoogle();
     });
   }
 
@@ -142,7 +149,8 @@ class _LoginPageState extends State<LoginPage> {
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 32),
-                  if (isLineLoginConfigured) ...[
+                  // iPhone アプリ版の LINE ログインは LINE SDK で別途対応する
+                  if (kIsWeb && isLineLoginConfigured) ...[
                     LineLoginButton(onPressed: _busy ? null : startLineLogin),
                     // ボタンの周りに保護エリア（何も置かない余白）を取る
                     const SizedBox(height: 16),

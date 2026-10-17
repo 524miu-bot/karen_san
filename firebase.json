@@ -5,6 +5,7 @@
         "lib/firebase_options.dart": {
           "projectId": "karen-san-app-f5025",
           "configurations": {
+            "ios": "1:953351033382:ios:0c71e4914db93172eccce7",
             "web": "1:953351033382:web:444b602a6078da2deccce7"
           }
         }
@@ -19,12 +20,26 @@
   },
   "hosting": {
     "public": "build/web",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [{"source": "**", "destination": "/index.html"}],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
     "headers": [
       {
         "source": "**/*.@(js|wasm|json)",
-        "headers": [{"key": "Cache-Control", "value": "no-cache"}]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
       }
     ]
   },
@@ -32,7 +47,12 @@
     {
       "source": "functions",
       "codebase": "default",
-      "ignore": ["node_modules", ".git", "*.local", "*.test.js"]
+      "ignore": [
+        "node_modules",
+        ".git",
+        "*.local",
+        "*.test.js"
+      ]
     }
   ]
 }

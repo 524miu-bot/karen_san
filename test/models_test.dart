@@ -15,15 +15,21 @@ void main() {
     });
 
     test('終日の予定は翌日 0:00 終了でも翌日には表示されない', () {
-      final e = _event(DateTime(2026, 10, 15), DateTime(2026, 10, 16),
-          allDay: true);
+      final e = _event(
+        DateTime(2026, 10, 15),
+        DateTime(2026, 10, 16),
+        allDay: true,
+      );
       expect(e.occursOn(DateTime(2026, 10, 15)), isTrue);
       expect(e.occursOn(DateTime(2026, 10, 16)), isFalse);
     });
 
     test('複数日の予定は期間中の毎日に表示される', () {
-      final e = _event(DateTime(2026, 10, 30), DateTime(2026, 11, 2),
-          allDay: true);
+      final e = _event(
+        DateTime(2026, 10, 30),
+        DateTime(2026, 11, 2),
+        allDay: true,
+      );
       expect(e.occursOn(DateTime(2026, 10, 29)), isFalse);
       expect(e.occursOn(DateTime(2026, 10, 30)), isTrue);
       expect(e.occursOn(DateTime(2026, 10, 31)), isTrue);

@@ -1,0 +1,45 @@
+# Codemagic で iPhone アプリをビルドし、TestFlight に送る設定。
+# https://docs.codemagic.io/yaml-quick-start/building-a-flutter-app/
+#
+# 事前に Codemagic の画面で行うこと：
+#   1. Teams → Integrations → Developer Portal に App Store Connect の API キーを登録し、
+#      名前を「karen-san ASC」にする（下の integrations と同じ名前）
+#   2. このリポジトリを Codemagic のアプリとして追加する
+workflows:
+  ios-testflight:
+    name: iPhone（TestFlight）
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: karen-san ASC
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.karensan.app
+      # 手元と同じ Flutter で作る（バージョン違いによる不具合を避ける）
+      flutter: 3.47.7
+      xcode: latest
+      cocoapods: default
+    triggering:
+      # 自動では動かさず、Codemagic の画面から手動で開始する（無料枠の節約）
+      events: []
+    scripts:
+      - name: パッケージを取得
+        script: flutter pub get
+      - name: 署名の設定を Xcode プロジェクトに反映
+        script: xcode-project use-profiles
+      - name: テスト
+        script: flutter test
+      - name: iPhone アプリをビルド
+        script: |
+          flutter build ipa --release \
+            --build-name=1.0.0 \
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

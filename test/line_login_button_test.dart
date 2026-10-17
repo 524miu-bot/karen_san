@@ -3,12 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:karen_san/line_login_button.dart';
 
-Future<void> _pump(WidgetTester tester, VoidCallback? onPressed, {double width = 320}) {
-  return tester.pumpWidget(MaterialApp(
-    home: Center(
-      child: SizedBox(width: width, child: LineLoginButton(onPressed: onPressed)),
+Future<void> _pump(
+  WidgetTester tester,
+  VoidCallback? onPressed, {
+  double width = 320,
+}) {
+  return tester.pumpWidget(
+    MaterialApp(
+      home: Center(
+        child: SizedBox(
+          width: width,
+          child: LineLoginButton(onPressed: onPressed),
+        ),
+      ),
     ),
-  ));
+  );
 }
 
 String _iconAsset(WidgetTester tester) =>
@@ -26,8 +35,9 @@ void main() {
 
   testWidgets('押している間は押下用のアイコンになる', (tester) async {
     await _pump(tester, () {});
-    final gesture =
-        await tester.startGesture(tester.getCenter(find.byType(LineLoginButton)));
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(LineLoginButton)),
+    );
     await tester.pump();
     expect(_iconAsset(tester), 'assets/line/btn_press.png');
     await gesture.up();

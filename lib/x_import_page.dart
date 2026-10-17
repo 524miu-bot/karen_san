@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'repository.dart';
 import 'x_archive/file_pick_stub.dart'
+    if (dart.library.io) 'x_archive/file_pick_io.dart'
     if (dart.library.js_interop) 'x_archive/file_pick_web.dart';
 import 'x_archive/x_archive.dart';
 

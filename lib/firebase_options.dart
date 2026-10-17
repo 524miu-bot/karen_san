@@ -26,10 +26,7 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -59,5 +56,15 @@ class DefaultFirebaseOptions {
     projectId: 'karen-san-app-f5025',
     authDomain: 'karen-san-app-f5025.firebaseapp.com',
     storageBucket: 'karen-san-app-f5025.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyBwOwQOMupkxLGwgpxyIuZBRpafj7XovlU',
+    appId: '1:953351033382:ios:0c71e4914db93172eccce7',
+    messagingSenderId: '953351033382',
+    projectId: 'karen-san-app-f5025',
+    storageBucket: 'karen-san-app-f5025.firebasestorage.app',
+    iosClientId: '953351033382-vfgtti9tju6taiq2umdh0l7bqnn931kr.apps.googleusercontent.com',
+    iosBundleId: 'com.karensan.app',
   );
 }

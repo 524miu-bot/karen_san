@@ -58,20 +58,30 @@ void main() {
   group('ZipReader', () {
     test('圧縮されたファイルも無圧縮のファイルも取り出せる', () async {
       for (final store in [false, true]) {
-        final reader = await ZipReader.open(BytesSource(_zip({
-          'data/tweets.js': _tweetsJs,
-          'data/tweets_media/photo.jpg': 'x' * 1000,
-        }, store: store)));
-        expect(reader.entries.map((e) => e.name),
-            containsAll(['data/tweets.js', 'data/tweets_media/photo.jpg']));
-        final entry = reader.entries.firstWhere((e) => e.name == 'data/tweets.js');
+        final reader = await ZipReader.open(
+          BytesSource(
+            _zip({
+              'data/tweets.js': _tweetsJs,
+              'data/tweets_media/photo.jpg': 'x' * 1000,
+            }, store: store),
+          ),
+        );
+        expect(
+          reader.entries.map((e) => e.name),
+          containsAll(['data/tweets.js', 'data/tweets_media/photo.jpg']),
+        );
+        final entry = reader.entries.firstWhere(
+          (e) => e.name == 'data/tweets.js',
+        );
         expect(utf8.decode(await reader.extract(entry)), _tweetsJs);
       }
     });
 
     test('ZIP でないファイルはエラー', () async {
-      expect(ZipReader.open(BytesSource(Uint8List.fromList(utf8.encode('hello')))),
-          throwsA(isA<ZipFormatException>()));
+      expect(
+        ZipReader.open(BytesSource(Uint8List.fromList(utf8.encode('hello')))),
+        throwsA(isA<ZipFormatException>()),
+      );
     });
   });
 
@@ -101,15 +111,19 @@ void main() {
       expect(snowflakeTime('20'), isNull);
       // (1846000000000000000 >> 22) + 1288834974657 ミリ秒
       final t = snowflakeTime('1846000000000000000')!;
-      expect(t.millisecondsSinceEpoch,
-          (BigInt.parse('1846000000000000000') >> 22).toInt() + 1288834974657);
+      expect(
+        t.millisecondsSinceEpoch,
+        (BigInt.parse('1846000000000000000') >> 22).toInt() + 1288834974657,
+      );
     });
 
     test('日付はタイムゾーンを反映する（UTC 15:30 は日本時間で翌日）', () {
       final posts = parseTweets(parseYtd(_tweetsJs));
       final expected = DateTime.utc(2025, 10, 15, 15, 30).toLocal();
-      expect(dayKey(posts[0].postedAt),
-          '${expected.year}-${expected.month.toString().padLeft(2, '0')}-${expected.day.toString().padLeft(2, '0')}');
+      expect(
+        dayKey(posts[0].postedAt),
+        '${expected.year}-${expected.month.toString().padLeft(2, '0')}-${expected.day.toString().padLeft(2, '0')}',
+      );
     });
 
     test('読み込むファイルを名前で見分ける', () {
@@ -124,12 +138,16 @@ void main() {
 
     test('ZIP から投稿といいねをまとめて読む', () async {
       final reader = XArchiveReader();
-      final found = await reader.addZip(BytesSource(_zip({
-        'data/tweets.js': _tweetsJs,
-        'data/like.js': _likesJs,
-        'data/deleted-tweets.js': _tweetsJs,
-        'Your archive.html': '<html></html>',
-      })));
+      final found = await reader.addZip(
+        BytesSource(
+          _zip({
+            'data/tweets.js': _tweetsJs,
+            'data/like.js': _likesJs,
+            'data/deleted-tweets.js': _tweetsJs,
+            'Your archive.html': '<html></html>',
+          }),
+        ),
+      );
       expect(found, 2);
       expect(reader.tweets, 3);
       expect(reader.likes, 1);
