@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'l10n.dart';
 import 'oshi.dart';
 import 'repository.dart';
 
@@ -38,11 +39,11 @@ class OshiPage extends StatelessWidget {
       builder: (context, snap) {
         final list = snap.data ?? const <Oshi>[];
         return Scaffold(
-          appBar: AppBar(title: const Text('推しの X')),
+          appBar: AppBar(title: Text(context.l10n.oshiTitle)),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _edit(context, list),
             icon: const Icon(Icons.add),
-            label: const Text('推しを追加'),
+            label: Text(context.l10n.oshiAdd),
           ),
           body: Center(
             child: ConstrainedBox(
@@ -50,17 +51,12 @@ class OshiPage extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.only(bottom: 88),
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text(
-                      '登録した人ごとに、カレンダーの日付を押したとき「この日の投稿を X で見る」'
-                      'ボタンが出ます。押すと X が開き、その人がその日に投稿したものだけが表示されます。\n'
-                      '・登録した内容はあなただけが見られます。\n'
-                      '・X にログインしていないと、検索結果が見られないことがあります。',
-                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(context.l10n.oshiIntro),
                   ),
                   if (snap.hasData && list.isEmpty)
-                    const ListTile(title: Text('まだ登録されていません')),
+                    ListTile(title: Text(context.l10n.oshiEmpty)),
                   for (var i = 0; i < list.length; i++)
                     ListTile(
                       leading: const CircleAvatar(
@@ -78,7 +74,7 @@ class OshiPage extends StatelessWidget {
                           : Text('@${list[i].handle}'),
                       onTap: () => _edit(context, list, i),
                       trailing: IconButton(
-                        tooltip: '削除',
+                        tooltip: context.l10n.delete,
                         icon: const Icon(Icons.delete_outline),
                         onPressed: () => _remove(list, i),
                       ),
@@ -118,7 +114,7 @@ class _OshiDialogState extends State<_OshiDialog> {
   void _submit() {
     final handle = Oshi.parseHandle(_handle.text);
     if (handle == null) {
-      setState(() => _error = 'X のユーザー名（@ のあとの英数字）か、プロフィールの URL を入れてください');
+      setState(() => _error = context.l10n.oshiHandleInvalid);
       return;
     }
     Navigator.pop(context, Oshi(handle: handle, name: _name.text.trim()));
@@ -127,7 +123,9 @@ class _OshiDialogState extends State<_OshiDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initial == null ? '推しを追加' : '推しを編集'),
+      title: Text(
+        widget.initial == null ? context.l10n.oshiAdd : context.l10n.oshiEdit,
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -135,8 +133,8 @@ class _OshiDialogState extends State<_OshiDialog> {
             controller: _handle,
             autofocus: true,
             decoration: InputDecoration(
-              labelText: 'X のユーザー名',
-              hintText: '@username または URL',
+              labelText: context.l10n.oshiHandle,
+              hintText: context.l10n.oshiHandleHint,
               errorText: _error,
               errorMaxLines: 3,
               border: const OutlineInputBorder(),
@@ -146,9 +144,9 @@ class _OshiDialogState extends State<_OshiDialog> {
           TextField(
             controller: _name,
             maxLength: 20,
-            decoration: const InputDecoration(
-              labelText: '表示名（なくても OK）',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.l10n.oshiDisplayName,
+              border: const OutlineInputBorder(),
             ),
             onSubmitted: (_) => _submit(),
           ),
@@ -157,9 +155,9 @@ class _OshiDialogState extends State<_OshiDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('キャンセル'),
+          child: Text(context.l10n.cancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('保存')),
+        FilledButton(onPressed: _submit, child: Text(context.l10n.save)),
       ],
     );
   }

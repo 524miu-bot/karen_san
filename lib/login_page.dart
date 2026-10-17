@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'google_login.dart';
+import 'l10n.dart';
 import 'line_login.dart';
 import 'line_login_button.dart';
 
@@ -36,7 +37,13 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
     setState(() {
       _busy = false;
-      if (result is LineLoginFailure) _error = result.message;
+      if (result is LineLoginFailure) {
+        _error = switch (result.error) {
+          LineLoginError.cancelled => context.l10n.lineCancelled,
+          LineLoginError.stateMismatch => context.l10n.lineStateMismatch,
+          LineLoginError.failed => context.l10n.lineFailed(result.code),
+        };
+      }
     });
   }
 
@@ -58,7 +65,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _error = _messageFor(e));
     } catch (e) {
       // 端末の Google ログインのエラーなど
-      if (mounted) setState(() => _error = 'ログインできませんでした（$e）。');
+      if (mounted) setState(() => _error = context.l10n.loginFailed('$e'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -90,36 +97,38 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _resetPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      setState(() => _error = 'メールアドレスを入力してください。');
+      setState(() => _error = context.l10n.emailRequired);
       return;
     }
     await _run(() async {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('パスワード再設定メールを送信しました。')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.passwordResetSent)));
     });
   }
 
   String _messageFor(FirebaseAuthException e) {
+    final l10n = context.l10n;
     switch (e.code) {
       case 'invalid-email':
-        return 'メールアドレスの形式が正しくありません。';
+        return l10n.authInvalidEmail;
       case 'invalid-credential':
       case 'user-not-found':
       case 'wrong-password':
-        return 'メールアドレスまたはパスワードが違います。';
+        return l10n.authWrongCredentials;
       case 'email-already-in-use':
-        return 'このメールアドレスはすでに登録されています。';
+        return l10n.authEmailInUse;
       case 'weak-password':
-        return 'パスワードは 6 文字以上にしてください。';
+        return l10n.authWeakPassword;
       case 'popup-closed-by-user':
       case 'cancelled-popup-request':
-        return 'ログインがキャンセルされました。';
+        return l10n.authCancelled;
       case 'too-many-requests':
-        return '試行回数が多すぎます。しばらくしてからお試しください。';
+        return l10n.authTooMany;
       default:
-        return 'エラーが発生しました（${e.code}）。';
+        return l10n.authError(e.code);
     }
   }
 
@@ -144,7 +153,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'カレンさん',
+                    context.l10n.appTitle,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
@@ -158,17 +167,17 @@ class _LoginPageState extends State<LoginPage> {
                   OutlinedButton.icon(
                     onPressed: _busy ? null : _signInWithGoogle,
                     icon: const Icon(Icons.account_circle),
-                    label: const Text('Google でログイン'),
+                    label: Text(context.l10n.loginGoogle),
                   ),
                   const SizedBox(height: 24),
-                  const Row(
+                  Row(
                     children: [
-                      Expanded(child: Divider()),
+                      const Expanded(child: Divider()),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: Text('または'),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(context.l10n.loginOr),
                       ),
-                      Expanded(child: Divider()),
+                      const Expanded(child: Divider()),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -176,12 +185,12 @@ class _LoginPageState extends State<LoginPage> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     autofillHints: const [AutofillHints.email],
-                    decoration: const InputDecoration(
-                      labelText: 'メールアドレス',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.email,
+                      border: const OutlineInputBorder(),
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'メールアドレスを入力してください'
+                        ? context.l10n.emailRequired
                         : null,
                   ),
                   const SizedBox(height: 16),
@@ -189,12 +198,13 @@ class _LoginPageState extends State<LoginPage> {
                     controller: _passwordController,
                     obscureText: true,
                     autofillHints: const [AutofillHints.password],
-                    decoration: const InputDecoration(
-                      labelText: 'パスワード',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.password,
+                      border: const OutlineInputBorder(),
                     ),
-                    validator: (v) =>
-                        (v == null || v.length < 6) ? '6 文字以上で入力してください' : null,
+                    validator: (v) => (v == null || v.length < 6)
+                        ? context.l10n.passwordMin
+                        : null,
                     onFieldSubmitted: (_) => _submitEmail(),
                   ),
                   if (_error != null) ...[
@@ -209,7 +219,9 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 16),
                   FilledButton(
                     onPressed: _busy ? null : _submitEmail,
-                    child: Text(_isSignUp ? '新規登録' : 'ログイン'),
+                    child: Text(
+                      _isSignUp ? context.l10n.signUp : context.l10n.logIn,
+                    ),
                   ),
                   TextButton(
                     onPressed: _busy
@@ -219,13 +231,15 @@ class _LoginPageState extends State<LoginPage> {
                             _error = null;
                           }),
                     child: Text(
-                      _isSignUp ? 'アカウントをお持ちの方はこちら（ログイン）' : 'はじめての方はこちら（新規登録）',
+                      _isSignUp
+                          ? context.l10n.haveAccount
+                          : context.l10n.firstTime,
                     ),
                   ),
                   if (!_isSignUp)
                     TextButton(
                       onPressed: _busy ? null : _resetPassword,
-                      child: const Text('パスワードを忘れた方'),
+                      child: Text(context.l10n.forgotPassword),
                     ),
                 ],
               ),

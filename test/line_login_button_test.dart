@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:karen_san/l10n.dart';
 
 import 'package:karen_san/line_login_button.dart';
 
@@ -10,6 +11,9 @@ Future<void> _pump(
 }) {
   return tester.pumpWidget(
     MaterialApp(
+      locale: const Locale('ja'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Center(
         child: SizedBox(
           width: width,

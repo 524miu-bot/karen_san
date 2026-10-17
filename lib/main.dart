@@ -1,20 +1,29 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'calendar_page.dart';
 import 'family_setup_page.dart';
 import 'firebase_options.dart';
+import 'l10n.dart';
 import 'login_page.dart';
 import 'repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await initializeDateFormatting('ja');
+  await initializeDateFormatting();
   runApp(const KarenSanApp());
+}
+
+/// 端末の言語が日本語なら日本語、それ以外は英語。
+Locale resolveAppLocale(List<Locale>? deviceLocales) {
+  for (final l in deviceLocales ?? const <Locale>[]) {
+    if (l.languageCode == 'ja') return const Locale('ja');
+    if (l.languageCode == 'en') return const Locale('en');
+  }
+  return const Locale('en');
 }
 
 class KarenSanApp extends StatelessWidget {
@@ -23,13 +32,13 @@ class KarenSanApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'カレンさん',
+      onGenerateTitle: (context) => context.l10n.appTitle,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      locale: const Locale('ja', 'JP'),
-      supportedLocales: const [Locale('ja', 'JP')],
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localeListResolutionCallback: (locales, _) => resolveAppLocale(locales),
       home: const AuthGate(),
     );
   }
@@ -59,7 +68,9 @@ class AuthGate extends StatelessWidget {
           builder: (context, familySnap) {
             if (familySnap.hasError) {
               return Scaffold(
-                body: Center(child: Text('読み込めませんでした：${familySnap.error}')),
+                body: Center(
+                  child: Text(context.l10n.loadFailed('${familySnap.error}')),
+                ),
               );
             }
             if (!familySnap.hasData &&

@@ -38,10 +38,10 @@ class Repository {
   Stream<Family> watchFamily(String familyId) =>
       _familyDoc(familyId).snapshots().map(Family.fromDoc);
 
-  static String defaultName(User user) {
+  static String defaultName(User user, {String fallback = 'メンバー'}) {
     final name = user.displayName;
     if (name != null && name.isNotEmpty) return name;
-    return user.email?.split('@').first ?? 'メンバー';
+    return user.email?.split('@').first ?? fallback;
   }
 
   static String _newInviteCode() {

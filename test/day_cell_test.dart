@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:karen_san/l10n.dart';
 
 import 'package:karen_san/calendar_page.dart';
 import 'package:karen_san/models.dart';
@@ -29,6 +30,9 @@ List<CalendarEvent> _events(int n, {DateTime? on}) => [
 Future<void> _pumpCell(WidgetTester tester, Size size, int eventCount) {
   return tester.pumpWidget(
     MaterialApp(
+      locale: const Locale('ja'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Center(
         child: SizedBox(
           width: size.width,
@@ -74,6 +78,9 @@ void main() {
   testWidgets('祝日名は日付の横に出し、予定の行数は減らない', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('ja'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Center(
           child: SizedBox(
             width: 56,

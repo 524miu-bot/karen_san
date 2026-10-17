@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'event_editor_page.dart';
 import 'family_settings_page.dart';
 import 'holidays.dart';
+import 'l10n.dart';
 import 'models.dart';
 import 'oshi.dart';
 import 'repository.dart';
@@ -25,8 +26,8 @@ Color? _weekdayColor(DateTime day) => switch (day.weekday) {
 };
 
 /// 日付の色。祝日・休日は曜日にかかわらず赤。
-Color? _dayColor(DateTime day) =>
-    holidayName(day) != null ? _sundayColor : _weekdayColor(day);
+Color? _dayColor(DateTime day, {required bool isHoliday}) =>
+    isHoliday ? _sundayColor : _weekdayColor(day);
 
 /// 1 日の中での並び順：複数日・終日の予定を上に、時間指定は開始順。
 int _compareEvents(CalendarEvent a, CalendarEvent b) {
@@ -171,11 +172,19 @@ class _CalendarPageState extends State<CalendarPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              DateFormat('M月d日(E)', 'ja').format(day),
+                              DateFormat.MMMEd(context.localeName).format(day),
                               style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(color: _dayColor(day)),
+                                  ?.copyWith(
+                                    color: _dayColor(
+                                      day,
+                                      isHoliday:
+                                          localizedHolidayName(context, day) !=
+                                          null,
+                                    ),
+                                  ),
                             ),
-                            if (holidayName(day) case final name?)
+                            if (localizedHolidayName(context, day)
+                                case final name?)
                               Text(
                                 name,
                                 style: const TextStyle(color: _sundayColor),
@@ -189,7 +198,7 @@ class _CalendarPageState extends State<CalendarPage> {
                           _openEditor(family, day: day);
                         },
                         icon: const Icon(Icons.add),
-                        label: const Text('予定を追加'),
+                        label: Text(context.l10n.addEvent),
                       ),
                     ],
                   ),
@@ -210,9 +219,9 @@ class _CalendarPageState extends State<CalendarPage> {
                         padding: const EdgeInsets.only(bottom: 24),
                         children: [
                           if (dayEvents.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.fromLTRB(20, 16, 20, 24),
-                              child: Text('予定はありません'),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                              child: Text(context.l10n.noEvents),
                             ),
                           for (final e in dayEvents)
                             _EventTile(
@@ -228,7 +237,7 @@ class _CalendarPageState extends State<CalendarPage> {
                             Padding(
                               padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
                               child: Text(
-                                '𝕏 この日の投稿（${posts.length}）',
+                                context.l10n.xPostsOfDay(posts.length),
                                 style: Theme.of(context).textTheme.titleSmall,
                               ),
                             ),
@@ -239,7 +248,7 @@ class _CalendarPageState extends State<CalendarPage> {
                             Padding(
                               padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
                               child: Text(
-                                '推しのこの日の投稿',
+                                context.l10n.oshiPostsOfDay,
                                 style: Theme.of(context).textTheme.titleSmall,
                               ),
                             ),
@@ -250,7 +259,7 @@ class _CalendarPageState extends State<CalendarPage> {
                                 ),
                                 leading: const Icon(Icons.favorite_outline),
                                 title: Text(o.label),
-                                subtitle: const Text('X で見る'),
+                                subtitle: Text(context.l10n.viewOnX),
                                 trailing: const Icon(
                                   Icons.open_in_new,
                                   size: 16,
@@ -304,11 +313,13 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget _buildScaffold(Family? family, AsyncSnapshot<Family> familySnap) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(family?.name ?? 'カレンさん'),
+        title: Text(family?.name ?? context.l10n.appTitle),
         actions: [
           if (_xPosts.isNotEmpty)
             IconButton(
-              tooltip: _showX ? 'X の投稿を隠す' : 'X の投稿を表示',
+              tooltip: _showX
+                  ? context.l10n.hideXPosts
+                  : context.l10n.showXPosts,
               isSelected: _showX,
               onPressed: () => setState(() => _showX = !_showX),
               icon: Text(
@@ -321,12 +332,12 @@ class _CalendarPageState extends State<CalendarPage> {
             ),
           if (family != null)
             IconButton(
-              tooltip: 'メンバー・予定者',
+              tooltip: context.l10n.membersTooltip,
               icon: const Icon(Icons.group_add_outlined),
               onPressed: () => _showFamily(family),
             ),
           IconButton(
-            tooltip: 'ログアウト',
+            tooltip: context.l10n.logout,
             icon: const Icon(Icons.logout),
             onPressed: () => FirebaseAuth.instance.signOut(),
           ),
@@ -335,12 +346,12 @@ class _CalendarPageState extends State<CalendarPage> {
       floatingActionButton: family == null
           ? null
           : FloatingActionButton(
-              tooltip: '予定を追加',
+              tooltip: context.l10n.addEvent,
               onPressed: () => _openEditor(family),
               child: const Icon(Icons.add),
             ),
       body: familySnap.hasError
-          ? Center(child: Text('読み込めませんでした：${familySnap.error}'))
+          ? Center(child: Text(context.l10n.loadFailed('${familySnap.error}')))
           : family == null
           ? const Center(child: CircularProgressIndicator())
           : _buildCalendar(family),
@@ -360,23 +371,23 @@ class _CalendarPageState extends State<CalendarPage> {
                 if (snap.hasError)
                   Padding(
                     padding: const EdgeInsets.all(8),
-                    child: Text('予定を読み込めませんでした：${snap.error}'),
+                    child: Text(context.l10n.eventsLoadFailed('${snap.error}')),
                   ),
                 Expanded(
                   child: TableCalendar<CalendarEvent>(
-                    locale: 'ja_JP',
+                    locale: context.localeName,
                     firstDay: DateTime(2000),
                     lastDay: DateTime(holidayLastYear, 12, 31),
                     focusedDay: _focusedDay,
                     shouldFillViewport: true,
                     sixWeekMonthsEnforced: true,
                     startingDayOfWeek: StartingDayOfWeek.sunday,
-                    availableCalendarFormats: const {CalendarFormat.month: '月'},
+                    availableCalendarFormats: const {CalendarFormat.month: ''},
                     headerStyle: HeaderStyle(
                       titleCentered: true,
                       formatButtonVisible: false,
                       titleTextFormatter: (date, locale) =>
-                          DateFormat('y年M月', 'ja').format(date),
+                          DateFormat.yMMMM(context.localeName).format(date),
                       titleTextStyle: Theme.of(context).textTheme.titleLarge!,
                     ),
                     daysOfWeekHeight: 24,
@@ -405,7 +416,7 @@ class _CalendarPageState extends State<CalendarPage> {
                     calendarBuilders: CalendarBuilders(
                       dowBuilder: (context, day) => Center(
                         child: Text(
-                          DateFormat.E('ja').format(day),
+                          DateFormat.E(context.localeName).format(day),
                           style: TextStyle(
                             fontSize: 12,
                             color:
@@ -419,7 +430,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         return DayCell(
                           day: d,
                           events: _eventsOn(d),
-                          holiday: holidayName(d),
+                          holiday: localizedHolidayName(context, d),
                           xCount: _showX ? _xPosts[dayKey(d)]?.length ?? 0 : 0,
                           family: family,
                           isToday: isSameDay(d, DateTime.now()),
@@ -653,15 +664,21 @@ class _EventTile extends StatelessWidget {
   final Family family;
   final VoidCallback onTap;
 
-  String _timeText() {
+  String _timeText(BuildContext context) {
+    final l10n = context.l10n;
+    final md = DateFormat.Md(l10n.localeName);
+    final sep = l10n.rangeSeparator;
     if (event.allDay) {
       final lastDay = event.end.subtract(const Duration(days: 1));
-      if (isSameDay(event.start, lastDay)) return '終日';
-      return '${DateFormat('M/d').format(event.start)}〜${DateFormat('M/d').format(lastDay)}';
+      if (isSameDay(event.start, lastDay)) return l10n.allDay;
+      return '${md.format(event.start)}$sep${md.format(lastDay)}';
     }
     final sameDay = isSameDay(event.start, event.end);
-    final endFmt = sameDay ? DateFormat('H:mm') : DateFormat('M/d H:mm');
-    return '${DateFormat('H:mm').format(event.start)}〜${endFmt.format(event.end)}';
+    final hm = DateFormat('H:mm');
+    final end = sameDay
+        ? hm.format(event.end)
+        : '${md.format(event.end)} ${hm.format(event.end)}';
+    return '${hm.format(event.start)}$sep$end';
   }
 
   @override
@@ -692,7 +709,7 @@ class _EventTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${_timeText()}   ${family.nameOf(event.owner)}',
+                    '${_timeText(context)}   ${ownerName(context, family, event.owner)}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -733,10 +750,13 @@ class _XPostTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(post.text.isEmpty ? '（本文なし）' : post.text),
+                  Text(post.text.isEmpty ? context.l10n.noText : post.text),
                   const SizedBox(height: 2),
                   Text(
-                    [post.kind.label, if (post.hasMedia) '画像あり'].join('・'),
+                    [
+                      xKindLabel(context, post.kind),
+                      if (post.hasMedia) context.l10n.hasImage,
+                    ].join(' · '),
                     style: muted,
                   ),
                 ],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'family_settings_page.dart';
+import 'l10n.dart';
 import 'models.dart';
 import 'repository.dart';
 
@@ -108,7 +109,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   Future<void> _save() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) {
-      setState(() => _error = 'タイトルを入力してください。');
+      setState(() => _error = context.l10n.titleRequired);
       return;
     }
     // 終日の予定は「開始日 0:00 〜 終了日の翌日 0:00」で保存する。
@@ -119,7 +120,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
         ? DateTime(_end.year, _end.month, _end.day).add(const Duration(days: 1))
         : _end;
     if (!end.isAfter(start)) {
-      setState(() => _error = '終了は開始より後にしてください。');
+      setState(() => _error = context.l10n.endBeforeStart);
       return;
     }
     final event = CalendarEvent(
@@ -143,7 +144,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
     } catch (e) {
       setState(() {
         _busy = false;
-        _error = '保存できませんでした：$e';
+        _error = context.l10n.saveFailed('$e');
       });
     }
   }
@@ -152,16 +153,16 @@ class _EventEditorPageState extends State<EventEditorPage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('この予定を削除しますか？'),
-        content: const Text('家族全員のカレンダーから消えます。'),
+        title: Text(context.l10n.deleteEventTitle),
+        content: Text(context.l10n.deleteEventBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('キャンセル'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('削除'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -174,7 +175,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
     } catch (e) {
       setState(() {
         _busy = false;
-        _error = '削除できませんでした：$e';
+        _error = context.l10n.deleteFailed('$e');
       });
     }
   }
@@ -182,15 +183,15 @@ class _EventEditorPageState extends State<EventEditorPage> {
   @override
   Widget build(BuildContext context) {
     final fmt = _allDay
-        ? DateFormat('y年M月d日(E)', 'ja')
-        : DateFormat('y年M月d日(E) H:mm', 'ja');
+        ? DateFormat.yMMMEd(context.localeName)
+        : DateFormat.yMMMEd(context.localeName).add_Hm();
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isNew ? '予定を追加' : '予定を編集'),
+        title: Text(_isNew ? context.l10n.addEvent : context.l10n.editEvent),
         actions: [
           if (!_isNew)
             IconButton(
-              tooltip: '削除',
+              tooltip: context.l10n.delete,
               onPressed: _busy ? null : _delete,
               icon: const Icon(Icons.delete_outline),
             ),
@@ -206,12 +207,15 @@ class _EventEditorPageState extends State<EventEditorPage> {
                 controller: _titleController,
                 autofocus: _isNew,
                 maxLength: 100,
-                decoration: const InputDecoration(
-                  labelText: 'タイトル',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: context.l10n.eventTitle,
+                  border: const OutlineInputBorder(),
                 ),
               ),
-              Text('誰の予定？', style: Theme.of(context).textTheme.labelLarge),
+              Text(
+                context.l10n.whoseEvent,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
               const SizedBox(height: 8),
               // 予定者を追加・変更したらすぐ選択肢に出るよう、家族の変更を受け取る。
               StreamBuilder<Family>(
@@ -233,14 +237,14 @@ class _EventEditorPageState extends State<EventEditorPage> {
                           avatar: CircleAvatar(
                             backgroundColor: family.colorOf(id),
                           ),
-                          label: Text(family.nameOf(id)),
+                          label: Text(ownerName(context, family, id)),
                           selected: _ownerId == id,
                           showCheckmark: false,
                           onSelected: (_) => setState(() => _ownerId = id),
                         ),
                       ActionChip(
                         avatar: const Icon(Icons.add, size: 18),
-                        label: const Text('予定者を追加'),
+                        label: Text(context.l10n.addPerson),
                         onPressed: () async {
                           final id = await addPersonFlow(context, family);
                           if (id != null && mounted) {
@@ -255,7 +259,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
               const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('終日'),
+                title: Text(context.l10n.allDay),
                 value: _allDay,
                 onChanged: (v) => setState(() {
                   _allDay = v;
@@ -267,14 +271,14 @@ class _EventEditorPageState extends State<EventEditorPage> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.schedule),
-                title: const Text('開始'),
+                title: Text(context.l10n.start),
                 trailing: Text(fmt.format(_start)),
                 onTap: _pickStart,
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.schedule_outlined),
-                title: const Text('終了'),
+                title: Text(context.l10n.end),
                 trailing: Text(fmt.format(_end)),
                 onTap: _pickEnd,
               ),
@@ -282,15 +286,18 @@ class _EventEditorPageState extends State<EventEditorPage> {
               TextField(
                 controller: _noteController,
                 maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'メモ',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: context.l10n.memo,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               if (!_isNew && widget.event!.createdByName.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
-                  '登録した人：${widget.family.memberNames[widget.event!.createdBy] ?? widget.event!.createdByName}',
+                  context.l10n.addedBy(
+                    widget.family.memberNames[widget.event!.createdBy] ??
+                        widget.event!.createdByName,
+                  ),
                 ),
               ],
               if (_error != null) ...[
@@ -303,7 +310,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: _busy ? null : _save,
-                child: const Text('保存'),
+                child: Text(context.l10n.save),
               ),
             ],
           ),

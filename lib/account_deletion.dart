@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import 'l10n.dart';
+
 /// アカウント削除の確認画面を出し、同意されたら削除してログアウトする。
 Future<void> confirmAndDeleteAccount(BuildContext context) async {
   final ok = await showDialog<bool>(
@@ -15,14 +17,14 @@ Future<void> confirmAndDeleteAccount(BuildContext context) async {
   showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => const PopScope(
+    builder: (dialogContext) => PopScope(
       canPop: false,
       child: AlertDialog(
         content: Row(
           children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Expanded(child: Text('削除しています…')),
+            const CircularProgressIndicator(),
+            const SizedBox(width: 16),
+            Expanded(child: Text(dialogContext.l10n.deleting)),
           ],
         ),
       ),
@@ -36,8 +38,9 @@ Future<void> confirmAndDeleteAccount(BuildContext context) async {
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pop();
     final message = e is FirebaseFunctionsException ? e.message : '$e';
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('削除できませんでした：$message')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.deleteFailed('$message'))),
+    );
     return;
   }
   if (context.mounted) {
@@ -70,33 +73,22 @@ class _ConfirmDeleteDialogState extends State<_ConfirmDeleteDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final ready = _controller.text.trim() == '削除';
+    final ready =
+        _controller.text.trim().toUpperCase() == context.l10n.deleteConfirmWord;
     return AlertDialog(
-      title: const Text('アカウントを削除しますか？'),
+      title: Text(context.l10n.deleteAccountTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '次のものが削除され、元に戻せません。\n'
-              '・あなたのアカウント\n'
-              '・取り込んだ X の投稿と、推しの登録\n'
-              '・グループのメンバーからあなたの名前と色\n'
-              '\n'
-              'グループにほかのメンバーがいる場合、予定は家族のために残り、'
-              '「登録した人」からあなたの名前が消えます。'
-              'あなたが最後の 1 人なら、グループと予定もすべて削除されます。\n'
-              '\n'
-              'LINE でログインしていた場合、LINE アプリの「設定 → アカウント → 連動アプリ」'
-              'からカレンさんとの連動も解除できます。',
-            ),
+            Text(context.l10n.deleteAccountBody),
             const SizedBox(height: 16),
             TextField(
               controller: _controller,
-              decoration: const InputDecoration(
-                labelText: '確認のため「削除」と入力してください',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.deleteConfirmLabel,
+                border: const OutlineInputBorder(),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -106,7 +98,7 @@ class _ConfirmDeleteDialogState extends State<_ConfirmDeleteDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('キャンセル'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           style: FilledButton.styleFrom(
@@ -114,7 +106,7 @@ class _ConfirmDeleteDialogState extends State<_ConfirmDeleteDialog> {
             foregroundColor: Theme.of(context).colorScheme.onError,
           ),
           onPressed: ready ? () => Navigator.pop(context, true) : null,
-          child: const Text('削除する'),
+          child: Text(context.l10n.deleteAccountButton),
         ),
       ],
     );

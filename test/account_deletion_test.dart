@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:karen_san/l10n.dart';
 
 import 'package:karen_san/account_deletion.dart';
 
@@ -7,6 +8,9 @@ void main() {
   testWidgets('「削除」と入力するまで削除ボタンは押せない', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('ja'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) => TextButton(
             onPressed: () => confirmAndDeleteAccount(context),

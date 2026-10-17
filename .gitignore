@@ -58,3 +58,6 @@ functions/.secret.local
 
 # Firebase Hosting のキャッシュ
 .firebase/
+
+# Claude のローカル設定
+.claude/

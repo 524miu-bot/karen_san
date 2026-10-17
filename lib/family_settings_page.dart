@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'account_deletion.dart';
+import 'l10n.dart';
 import 'models.dart';
 import 'repository.dart';
 import 'oshi_page.dart';
@@ -13,7 +14,7 @@ Future<({String name, Color color})?> showNameColorDialog(
   required String title,
   String initialName = '',
   required Color initialColor,
-  String okLabel = '保存',
+  String? okLabel,
 }) {
   return showDialog<({String name, Color color})>(
     context: context,
@@ -37,7 +38,7 @@ class _NameColorDialog extends StatefulWidget {
   final String title;
   final String initialName;
   final Color initialColor;
-  final String okLabel;
+  final String? okLabel;
 
   @override
   State<_NameColorDialog> createState() => _NameColorDialogState();
@@ -57,7 +58,7 @@ class _NameColorDialogState extends State<_NameColorDialog> {
   void _submit() {
     final name = _controller.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = '名前を入力してください');
+      setState(() => _error = context.l10n.nameRequired);
       return;
     }
     Navigator.pop(context, (name: name, color: _color));
@@ -76,14 +77,14 @@ class _NameColorDialogState extends State<_NameColorDialog> {
             autofocus: true,
             maxLength: 20,
             decoration: InputDecoration(
-              labelText: '名前',
+              labelText: context.l10n.name,
               errorText: _error,
               border: const OutlineInputBorder(),
             ),
             onSubmitted: (_) => _submit(),
           ),
           const SizedBox(height: 8),
-          const Text('色'),
+          Text(context.l10n.color),
           const SizedBox(height: 8),
           ColorChoices(
             selected: _color,
@@ -94,9 +95,12 @@ class _NameColorDialogState extends State<_NameColorDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('キャンセル'),
+          child: Text(context.l10n.cancel),
         ),
-        FilledButton(onPressed: _submit, child: Text(widget.okLabel)),
+        FilledButton(
+          onPressed: _submit,
+          child: Text(widget.okLabel ?? context.l10n.save),
+        ),
       ],
     );
   }
@@ -143,9 +147,9 @@ Future<String?> addPersonFlow(BuildContext context, Family family) async {
           memberPalette.length];
   final result = await showNameColorDialog(
     context,
-    title: '予定者を追加',
+    title: context.l10n.addPerson,
     initialColor: nextColor,
-    okLabel: '追加',
+    okLabel: context.l10n.add,
   );
   if (result == null) return null;
   return Repository.instance.addPerson(
@@ -175,14 +179,14 @@ class FamilySettingsPage extends StatelessWidget {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('保存できませんでした：$e')));
+          .showSnackBar(SnackBar(content: Text(context.l10n.saveFailed('$e'))));
     }
   }
 
   Future<void> _editMe(BuildContext context, Family f) async {
     final result = await showNameColorDialog(
       context,
-      title: 'あなたの名前と色',
+      title: context.l10n.yourNameAndColor,
       initialName: f.memberNames[uid] ?? '',
       initialColor: f.colorOf(uid),
     );
@@ -196,7 +200,7 @@ class FamilySettingsPage extends StatelessWidget {
   Future<void> _editPerson(BuildContext context, Family f, Person p) async {
     final result = await showNameColorDialog(
       context,
-      title: '予定者を編集',
+      title: context.l10n.editPerson,
       initialName: p.name,
       initialColor: f.colorOf(p.id),
     );
@@ -216,16 +220,16 @@ class FamilySettingsPage extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('「${p.name}」を削除しますか？'),
-        content: const Text('この人の予定は消えずに残り、「（いなくなった人）」と表示されます。'),
+        title: Text(context.l10n.deletePersonTitle(p.name)),
+        content: Text(context.l10n.deletePersonBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('キャンセル'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('削除'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -241,7 +245,7 @@ class FamilySettingsPage extends StatelessWidget {
       builder: (context, snap) {
         final f = snap.data;
         return Scaffold(
-          appBar: AppBar(title: Text(f?.name ?? 'メンバー')),
+          appBar: AppBar(title: Text(f?.name ?? context.l10n.members)),
           body: f == null
               ? const Center(child: CircularProgressIndicator())
               : Center(
@@ -250,27 +254,24 @@ class FamilySettingsPage extends StatelessWidget {
                     child: ListView(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       children: [
-                        _header(context, 'ログインしているメンバー'),
+                        _header(context, context.l10n.loggedInMembers),
                         for (final id in f.memberIds)
                           ListTile(
                             leading: CircleAvatar(
                               backgroundColor: f.colorOf(id),
                             ),
-                            title: Text(f.nameOf(id)),
-                            subtitle: id == uid ? const Text('あなた') : null,
+                            title: Text(ownerName(context, f, id)),
+                            subtitle: id == uid ? Text(context.l10n.you) : null,
                             trailing: id == uid
                                 ? const Icon(Icons.edit_outlined)
                                 : null,
                             onTap: id == uid ? () => _editMe(context, f) : null,
                           ),
                         const Divider(),
-                        _header(context, '予定者（ログインしない人）'),
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-                          child: Text(
-                            'お子さんなど、アプリを使わない人の予定も色分けして登録できます。'
-                            'グループの誰でも追加・編集できます。',
-                          ),
+                        _header(context, context.l10n.peopleSection),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: Text(context.l10n.peopleHelp),
                         ),
                         for (final id in f.personIds)
                           ListTile(
@@ -280,7 +281,7 @@ class FamilySettingsPage extends StatelessWidget {
                             title: Text(f.people[id]!.name),
                             onTap: () => _editPerson(context, f, f.people[id]!),
                             trailing: IconButton(
-                              tooltip: '削除',
+                              tooltip: context.l10n.delete,
                               icon: const Icon(Icons.delete_outline),
                               onPressed: () =>
                                   _removePerson(context, f, f.people[id]!),
@@ -288,21 +289,19 @@ class FamilySettingsPage extends StatelessWidget {
                           ),
                         ListTile(
                           leading: const CircleAvatar(child: Icon(Icons.add)),
-                          title: const Text('予定者を追加'),
+                          title: Text(context.l10n.addPerson),
                           onTap: () => addPersonFlow(context, f),
                         ),
                         const Divider(),
-                        _header(context, 'あなたの X の投稿（日記）'),
+                        _header(context, context.l10n.xDiarySection),
                         ListTile(
                           leading: const CircleAvatar(
                             backgroundColor: Colors.black,
                             foregroundColor: Colors.white,
                             child: Text('𝕏'),
                           ),
-                          title: const Text('X の投稿を取り込む'),
-                          subtitle: const Text(
-                            '日付を押すと、その日の投稿やいいねを読めます。あなただけが見られます。',
-                          ),
+                          title: Text(context.l10n.xImportTitle),
+                          subtitle: Text(context.l10n.xImportSubtitle),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
@@ -314,8 +313,8 @@ class FamilySettingsPage extends StatelessWidget {
                           leading: const CircleAvatar(
                             child: Icon(Icons.favorite_outline),
                           ),
-                          title: const Text('推しの X を登録'),
-                          subtitle: const Text('日付を押すと、推しのその日の投稿を X で開けます。'),
+                          title: Text(context.l10n.oshiRegister),
+                          subtitle: Text(context.l10n.oshiRegisterSubtitle),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
@@ -324,42 +323,42 @@ class FamilySettingsPage extends StatelessWidget {
                           ),
                         ),
                         const Divider(),
-                        _header(context, '招待コード'),
+                        _header(context, context.l10n.inviteCode),
                         ListTile(
                           title: SelectableText(
                             f.inviteCode,
                             style: Theme.of(context).textTheme.headlineSmall,
                           ),
-                          subtitle: const Text(
-                            '家族にこのコードを伝えると、ログインして同じカレンダーに参加できます。',
-                          ),
+                          subtitle: Text(context.l10n.inviteHelp),
                           trailing: IconButton(
-                            tooltip: 'コピー',
+                            tooltip: context.l10n.copy,
                             icon: const Icon(Icons.copy),
                             onPressed: () {
                               Clipboard.setData(
                                 ClipboardData(text: f.inviteCode),
                               );
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('招待コードをコピーしました')),
+                                SnackBar(
+                                  content: Text(context.l10n.inviteCopied),
+                                ),
                               );
                             },
                           ),
                         ),
                         const Divider(),
-                        _header(context, 'アカウント'),
+                        _header(context, context.l10n.accountSection),
                         ListTile(
                           leading: Icon(
                             Icons.person_remove_outlined,
                             color: Theme.of(context).colorScheme.error,
                           ),
                           title: Text(
-                            'アカウントを削除',
+                            context.l10n.deleteAccount,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.error,
                             ),
                           ),
-                          subtitle: const Text('あなたのデータを削除して、ログアウトします。'),
+                          subtitle: Text(context.l10n.deleteAccountSubtitle),
                           onTap: () => confirmAndDeleteAccount(context),
                         ),
                       ],

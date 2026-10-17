@@ -86,5 +86,11 @@
 	<!-- ファイル選択の部品が写真ライブラリの機能を含むため、説明文が必要 -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>X のアーカイブなどのファイルを選ぶときに使います。</string>
+	<!-- アプリが対応している言語（App Store の表示と、端末の言語に合わせた表示に必要） -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>ja</string>
+	</array>
 </dict>
 </plist>

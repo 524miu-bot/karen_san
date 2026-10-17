@@ -97,9 +97,14 @@ class Family {
     CalendarEvent.everyone,
   ];
 
-  String nameOf(String ownerId) {
-    if (ownerId == CalendarEvent.everyone) return 'みんな';
-    return memberNames[ownerId] ?? people[ownerId]?.name ?? '（いなくなった人）';
+  /// 予定の持ち主の名前。画面では言語に合わせた [everyone]・[gone] を渡す（l10n.dart の ownerName）。
+  String nameOf(
+    String ownerId, {
+    String everyone = 'みんな',
+    String gone = '（いなくなった人）',
+  }) {
+    if (ownerId == CalendarEvent.everyone) return everyone;
+    return memberNames[ownerId] ?? people[ownerId]?.name ?? gone;
   }
 
   Color colorOf(String ownerId) {

@@ -72,7 +72,7 @@ class ZipReader {
         break;
       }
     }
-    if (eocd < 0) throw ZipFormatException('ZIP ファイルではありません');
+    if (eocd < 0) throw ZipFormatException('not a ZIP file');
 
     var count = tailData.getUint16(eocd + 10, Endian.little);
     var dirSize = tailData.getUint32(eocd + 12, Endian.little);
@@ -83,14 +83,14 @@ class ZipReader {
       final locator = eocd - 20;
       if (locator < 0 ||
           tailData.getUint32(locator, Endian.little) != 0x07064b50) {
-        throw ZipFormatException('ZIP64 の情報が見つかりません');
+        throw ZipFormatException('ZIP64 locator not found');
       }
       final recordOffset = _u64(tailData, locator + 8);
       final record = ByteData.sublistView(
         await source.read(recordOffset, recordOffset + 56),
       );
       if (record.getUint32(0, Endian.little) != 0x06064b50) {
-        throw ZipFormatException('ZIP64 の目次が壊れています');
+        throw ZipFormatException('broken ZIP64 directory');
       }
       count = _u64(record, 32);
       dirSize = _u64(record, 40);
@@ -103,7 +103,7 @@ class ZipReader {
     var p = 0;
     for (var i = 0; i < count; i++) {
       if (d.getUint32(p, Endian.little) != 0x02014b50) {
-        throw ZipFormatException('ZIP の目次が壊れています');
+        throw ZipFormatException('broken ZIP directory');
       }
       final method = d.getUint16(p + 10, Endian.little);
       var compressed = d.getUint32(p + 20, Endian.little);
@@ -158,7 +158,7 @@ class ZipReader {
       await _source.read(entry.localHeaderOffset, entry.localHeaderOffset + 30),
     );
     if (header.getUint32(0, Endian.little) != 0x04034b50) {
-      throw ZipFormatException('${entry.name} の位置が正しくありません');
+      throw ZipFormatException('bad offset for ${entry.name}');
     }
     final dataStart =
         entry.localHeaderOffset +
@@ -179,7 +179,7 @@ class ZipReader {
         ).getBytes();
       default:
         throw ZipFormatException(
-          '${entry.name} は対応していない圧縮形式です（${entry.method}）',
+          'unsupported compression method ${entry.method} for ${entry.name}',
         );
     }
   }

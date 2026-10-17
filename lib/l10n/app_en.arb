@@ -1,0 +1,252 @@
+{
+  "@@locale": "en",
+  "appTitle": "Karen-san",
+  "loginGoogle": "Sign in with Google",
+  "loginLine": "Log in with LINE",
+  "loginOr": "or",
+  "email": "Email",
+  "password": "Password",
+  "emailRequired": "Please enter your email address.",
+  "passwordMin": "Use at least 6 characters",
+  "signUp": "Sign up",
+  "logIn": "Log in",
+  "haveAccount": "Already have an account? Log in",
+  "firstTime": "New here? Sign up",
+  "forgotPassword": "Forgot your password?",
+  "passwordResetSent": "We sent you a password reset email.",
+  "loginFailed": "Couldn't sign in ({detail}).",
+  "@loginFailed": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "authInvalidEmail": "That email address doesn't look right.",
+  "authWrongCredentials": "Wrong email address or password.",
+  "authEmailInUse": "This email address is already registered.",
+  "authWeakPassword": "Use a password of at least 6 characters.",
+  "authCancelled": "Sign-in was cancelled.",
+  "authTooMany": "Too many attempts. Please try again later.",
+  "authError": "Something went wrong ({code}).",
+  "@authError": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "lineCancelled": "LINE login was cancelled.",
+  "lineFailed": "LINE login failed ({code}).",
+  "@lineFailed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "lineStateMismatch": "We couldn't verify the LINE login. Please try again.",
+  "logout": "Log out",
+  "loadFailed": "Couldn't load: {error}",
+  "@loadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsLoadFailed": "Couldn't load events: {error}",
+  "@eventsLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cancel": "Cancel",
+  "save": "Save",
+  "add": "Add",
+  "delete": "Delete",
+  "copy": "Copy",
+  "saveFailed": "Couldn't save: {error}",
+  "@saveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFailed": "Couldn't delete: {error}",
+  "@deleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorGeneric": "Something went wrong: {error}",
+  "@errorGeneric": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "setupTitle": "Getting started",
+  "setupIntro": "Create a group to share your calendar, or join one with an invite code from your family.",
+  "yourName": "Your display name",
+  "yourNameHelp": "Shown as \"added by\" on events",
+  "yourNameRequired": "Please enter your display name.",
+  "createNew": "Create a new group",
+  "groupName": "Group name",
+  "groupNameRequired": "Please enter a group name.",
+  "defaultGroupName": "Our family",
+  "createGroup": "Create group",
+  "joinWithCode": "Join with an invite code",
+  "inviteCodeField": "Invite code (8 characters)",
+  "join": "Join",
+  "inviteNotFound": "We couldn't find that invite code.",
+  "addEvent": "Add event",
+  "editEvent": "Edit event",
+  "noEvents": "No events",
+  "xPostsOfDay": "𝕏 Posts on this day ({count})",
+  "@xPostsOfDay": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "oshiPostsOfDay": "Their posts on this day",
+  "viewOnX": "View on X",
+  "hideXPosts": "Hide X posts",
+  "showXPosts": "Show X posts",
+  "membersTooltip": "Members & people",
+  "allDay": "All day",
+  "noText": "(no text)",
+  "hasImage": "has image",
+  "xKindPost": "Post",
+  "xKindReply": "Reply",
+  "xKindRepost": "Repost",
+  "xKindLike": "Like",
+  "titleRequired": "Please enter a title.",
+  "endBeforeStart": "The end must be after the start.",
+  "deleteEventTitle": "Delete this event?",
+  "deleteEventBody": "It will disappear from everyone's calendar in the group.",
+  "eventTitle": "Title",
+  "whoseEvent": "Whose event?",
+  "addPerson": "Add a person",
+  "start": "Start",
+  "end": "End",
+  "memo": "Notes",
+  "addedBy": "Added by: {name}",
+  "@addedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "everyone": "Everyone",
+  "formerMember": "(no longer here)",
+  "defaultMemberName": "Member",
+  "name": "Name",
+  "color": "Color",
+  "nameRequired": "Please enter a name",
+  "editPerson": "Edit person",
+  "yourNameAndColor": "Your name and color",
+  "deletePersonTitle": "Delete \"{name}\"?",
+  "@deletePersonTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePersonBody": "Their events stay and are shown as \"(no longer here)\".",
+  "members": "Members",
+  "loggedInMembers": "Members who sign in",
+  "you": "You",
+  "peopleSection": "People (who don't sign in)",
+  "peopleHelp": "Add events for people who don't use the app, like children, each with their own color. Anyone in the group can add or edit them.",
+  "xDiarySection": "Your X posts (diary)",
+  "xImportTitle": "Import your X posts",
+  "xImportSubtitle": "Tap a day to read your posts and likes from that day. Only you can see them.",
+  "oshiRegister": "Add accounts to follow",
+  "oshiRegisterSubtitle": "Tap a day to open that day's posts by people you follow on X.",
+  "inviteCode": "Invite code",
+  "inviteHelp": "Share this code with your family so they can sign in and join this calendar.",
+  "inviteCopied": "Invite code copied",
+  "accountSection": "Account",
+  "deleteAccount": "Delete account",
+  "deleteAccountSubtitle": "Delete your data and log out.",
+  "deleting": "Deleting…",
+  "deleteAccountTitle": "Delete your account?",
+  "deleteAccountBody": "The following will be deleted and can't be restored:\n• Your account\n• Imported X posts and the accounts you follow\n• Your name and color in the group's member list\n\nIf other members remain in your group, events stay for your family and your name is removed from \"added by\". If you are the last member, the group and all of its events are deleted too.\n\nIf you signed in with LINE, you can also disconnect Karen-san in the LINE app under Settings → Account → Authorized apps.",
+  "deleteConfirmWord": "DELETE",
+  "deleteConfirmLabel": "Type \"DELETE\" to confirm",
+  "deleteAccountButton": "Delete",
+  "xImportReading": "Reading the file…",
+  "xImportNotFound": "We couldn't find the posts in that file. Choose the ZIP you downloaded from X, or tweets.js and like.js from its data folder.",
+  "xImportSaving": "Saving…",
+  "xImportSavingProgress": "Saving… ({done} / {total} days)",
+  "@xImportSavingProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "xImportDone": "Imported {tweets} posts and {likes} likes",
+  "@xImportDone": {
+    "placeholders": {
+      "tweets": {
+        "type": "int"
+      },
+      "likes": {
+        "type": "int"
+      }
+    }
+  },
+  "xImportFailed": "Couldn't import: {error}",
+  "@xImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "xDeleteAllTitle": "Delete all imported X posts?",
+  "xDeleteAllBody": "Only the copies saved in Karen-san are deleted. Your posts on X are not affected.",
+  "deleted": "Deleted",
+  "xImportIntro": "Import your own posts and the posts you liked, then tap a day on the calendar to read that day's posts like a diary.",
+  "xImportNotes": "• Only you can see imported posts (your family can't).\n• Liked posts appear on the date they were originally posted, not the date you liked them.\n• Importing the same archive again won't create duplicates. To add newer posts, download a fresh archive from time to time.",
+  "xImportStep1": "1. Request your archive on X",
+  "xImportStep1Body": "In the X app or website, open Settings and privacy → Your account → Download an archive of your data, enter your password, and request it. It can take a day or more; X will notify you when it's ready.",
+  "xImportStep2": "2. Choose the downloaded ZIP",
+  "xImportStep2Body": "On iPhone you can pick the ZIP straight from the Files app. If that doesn't work, open the ZIP in Files to extract it and choose tweets.js and like.js from the data folder.",
+  "xImportPick": "Choose a file to import",
+  "xImportedCounting": "Imported: checking…",
+  "xImportedDays": "Imported: {days} days",
+  "@xImportedDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAll": "Delete all",
+  "oshiTitle": "Accounts to follow on X",
+  "oshiAdd": "Add account",
+  "oshiEdit": "Edit account",
+  "oshiIntro": "For each account here, tapping a day on the calendar shows a \"View on X\" button. It opens X with only the posts that account made on that day.\n• Only you can see this list.\n• You may need to be signed in to X to see search results.",
+  "oshiEmpty": "Nothing added yet",
+  "oshiHandleInvalid": "Enter an X username (the letters after @) or a profile URL",
+  "oshiHandle": "X username",
+  "oshiHandleHint": "@username or URL",
+  "oshiDisplayName": "Display name (optional)",
+  "rangeSeparator": " – "
+}

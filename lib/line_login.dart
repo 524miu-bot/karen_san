@@ -78,9 +78,14 @@ class LineLoginNone extends LineLoginResult {}
 
 class LineLoginSuccess extends LineLoginResult {}
 
+enum LineLoginError { cancelled, stateMismatch, failed }
+
 class LineLoginFailure extends LineLoginResult {
-  LineLoginFailure(this.message);
-  final String message;
+  LineLoginFailure(this.error, [this.code = '']);
+  final LineLoginError error;
+
+  /// 失敗の詳細（LINE やサーバーのエラーコード）。
+  final String code;
 }
 
 /// LINE の認可画面から戻ってきたページか（アドレスに ?code=… か ?error=… がある）。
@@ -101,17 +106,15 @@ Future<LineLoginResult> completeLineLoginIfNeeded() async {
   _clearQueryFromAddressBar();
 
   if (params['error'] != null) {
-    return LineLoginFailure(
-      params['error'] == 'access_denied'
-          ? 'LINE ログインがキャンセルされました。'
-          : 'LINE ログインに失敗しました（${params['error']}）。',
-    );
+    return params['error'] == 'access_denied'
+        ? LineLoginFailure(LineLoginError.cancelled)
+        : LineLoginFailure(LineLoginError.failed, params['error']!);
   }
   final code = params['code']!;
   if (expectedState == null ||
       nonce == null ||
       params['state'] != expectedState) {
-    return LineLoginFailure('LINE ログインの確認に失敗しました（state）。もう一度お試しください。');
+    return LineLoginFailure(LineLoginError.stateMismatch);
   }
 
   try {
@@ -127,9 +130,9 @@ Future<LineLoginResult> completeLineLoginIfNeeded() async {
     await FirebaseAuth.instance.signInWithCustomToken(token);
     return LineLoginSuccess();
   } on FirebaseFunctionsException catch (e) {
-    return LineLoginFailure('LINE ログインに失敗しました（${e.code}）。');
+    return LineLoginFailure(LineLoginError.failed, e.code);
   } on FirebaseAuthException catch (e) {
-    return LineLoginFailure('LINE ログインに失敗しました（${e.code}）。');
+    return LineLoginFailure(LineLoginError.failed, e.code);
   }
 }
 

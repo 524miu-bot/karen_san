@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'l10n.dart';
+
 /// LINE ログインボタン。
 ///
 /// LINE ログインボタン デザインガイドラインに沿っている：
@@ -59,7 +61,7 @@ class _LineLoginButtonState extends State<LineLoginButton> {
     return Semantics(
       button: true,
       enabled: _enabled,
-      label: 'LINEでログイン',
+      label: context.l10n.loginLine,
       child: MouseRegion(
         cursor: _enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
         onEnter: (_) => setState(() => _hovered = true),
@@ -104,7 +106,7 @@ class _LineLoginButtonState extends State<LineLoginButton> {
                         padding: const EdgeInsets.symmetric(horizontal: 32),
                         child: Center(
                           child: Text(
-                            'LINEでログイン',
+                            context.l10n.loginLine,
                             maxLines: 1,
                             softWrap: false,
                             overflow: TextOverflow.fade,
