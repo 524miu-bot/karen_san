@@ -43,6 +43,8 @@ dependencies:
     sdk: flutter
   cloud_functions: ^6.5.0
   web: ^1.1.1
+  archive: ^4.5.2
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:

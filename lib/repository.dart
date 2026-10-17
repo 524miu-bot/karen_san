@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/painting.dart';
 
 import 'models.dart';
+import 'x_archive/x_archive.dart';
 
 /// Firestore の読み書きをまとめたもの。
 ///
@@ -150,4 +151,85 @@ class Repository {
 
   Future<void> deleteEvent(String familyId, String eventId) =>
       _events(familyId).doc(eventId).delete();
+
+  // ---- X の投稿（本人だけが見られる日記） ----
+  // users/{uid}/xdays/{yyyy-MM-dd} … { date, posts: { 投稿ID: { t, at, k, m } } }
+
+  CollectionReference<Map<String, dynamic>> _xDays(String uid) =>
+      _userDoc(uid).collection('xdays');
+
+  /// 投稿を日ごとにまとめて保存する。同じ投稿を取り込み直しても重複しない。
+  Future<void> importXPosts(
+    String uid,
+    List<XPost> posts, {
+    void Function(int done, int total)? onProgress,
+  }) async {
+    final byDay = <String, Map<String, dynamic>>{};
+    for (final p in posts) {
+      (byDay[dayKey(p.postedAt)] ??= {})[p.id] = {
+        't': p.text,
+        'at': Timestamp.fromDate(p.postedAt),
+        'k': p.kind.name,
+        'm': p.hasMedia,
+      };
+    }
+    final days = byDay.keys.toList()..sort();
+    const perBatch = 200;
+    for (var i = 0; i < days.length; i += perBatch) {
+      final batch = _db.batch();
+      for (final day in days.skip(i).take(perBatch)) {
+        batch.set(_xDays(uid).doc(day), {'date': day, 'posts': byDay[day]},
+            SetOptions(merge: true));
+      }
+      await batch.commit();
+      onProgress?.call((i + perBatch).clamp(0, days.length), days.length);
+    }
+  }
+
+  /// [from] の日から [to] の日の手前までの投稿（日付キー → 投稿）。
+  Stream<Map<String, List<XPost>>> watchXPosts(
+    String uid, {
+    required DateTime from,
+    required DateTime to,
+  }) {
+    return _xDays(uid)
+        .where('date', isGreaterThanOrEqualTo: dayKey(from))
+        .where('date', isLessThan: dayKey(to))
+        .snapshots()
+        .map((q) => {
+              for (final doc in q.docs) doc.id: _xPostsOf(doc.data()),
+            });
+  }
+
+  static List<XPost> _xPostsOf(Map<String, dynamic> data) {
+    final posts = <XPost>[];
+    (data['posts'] as Map? ?? const {}).forEach((id, v) {
+      final m = v as Map;
+      posts.add(XPost(
+        id: id as String,
+        text: m['t'] as String? ?? '',
+        postedAt: (m['at'] as Timestamp).toDate(),
+        kind: XPostKind.fromCode(m['k'] as String?),
+        hasMedia: m['m'] as bool? ?? false,
+      ));
+    });
+    return posts..sort((a, b) => a.postedAt.compareTo(b.postedAt));
+  }
+
+  /// 取り込み済みの日数。
+  Future<int> countXDays(String uid) async =>
+      (await _xDays(uid).count().get()).count ?? 0;
+
+  /// 取り込んだ X の投稿をすべて削除する。
+  Future<void> deleteAllXPosts(String uid) async {
+    while (true) {
+      final q = await _xDays(uid).limit(400).get();
+      if (q.docs.isEmpty) return;
+      final batch = _db.batch();
+      for (final doc in q.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+  }
 }

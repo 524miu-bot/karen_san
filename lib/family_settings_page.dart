@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'models.dart';
 import 'repository.dart';
+import 'x_import_page.dart';
 
 /// 名前と色を入力するダイアログ。キャンセルなら null。
 Future<({String name, Color color})?> showNameColorDialog(
@@ -268,6 +269,22 @@ class FamilySettingsPage extends StatelessWidget {
                           leading: const CircleAvatar(child: Icon(Icons.add)),
                           title: const Text('予定者を追加'),
                           onTap: () => addPersonFlow(context, f),
+                        ),
+                        const Divider(),
+                        _header(context, 'あなたの X の投稿（日記）'),
+                        ListTile(
+                          leading: const CircleAvatar(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            child: Text('𝕏'),
+                          ),
+                          title: const Text('X の投稿を取り込む'),
+                          subtitle: const Text('日付を押すと、その日の投稿やいいねを読めます。あなただけが見られます。'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => XImportPage(uid: uid)),
+                          ),
                         ),
                         const Divider(),
                         _header(context, '招待コード'),

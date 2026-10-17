@@ -2,22 +2,24 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'event_editor_page.dart';
 import 'family_settings_page.dart';
 import 'holidays.dart';
 import 'models.dart';
 import 'repository.dart';
+import 'x_archive/x_archive.dart';
 
 const _sundayColor = Color(0xFFD32F2F);
 const _saturdayColor = Color(0xFF1976D2);
 
 /// 曜日の見出し用（日曜は赤、土曜は青）。
 Color? _weekdayColor(DateTime day) => switch (day.weekday) {
-      DateTime.sunday => _sundayColor,
-      DateTime.saturday => _saturdayColor,
-      _ => null,
-    };
+  DateTime.sunday => _sundayColor,
+  DateTime.saturday => _saturdayColor,
+  _ => null,
+};
 
 /// 日付の色。祝日・休日は曜日にかかわらず赤。
 Color? _dayColor(DateTime day) =>
@@ -26,7 +28,9 @@ Color? _dayColor(DateTime day) =>
 /// 1 日の中での並び順：複数日・終日の予定を上に、時間指定は開始順。
 int _compareEvents(CalendarEvent a, CalendarEvent b) {
   int rank(CalendarEvent e) =>
-      e.end.difference(e.start) > const Duration(days: 1) ? 0 : (e.allDay ? 1 : 2);
+      e.end.difference(e.start) > const Duration(days: 1)
+      ? 0
+      : (e.allDay ? 1 : 2);
   final r = rank(a).compareTo(rank(b));
   if (r != 0) return r;
   final s = a.start.compareTo(b.start);
@@ -49,9 +53,29 @@ class _CalendarPageState extends State<CalendarPage> {
   late DateTime _focusedDay = _today();
   late DateTime _selectedDay = _today();
   late Stream<List<CalendarEvent>> _eventsStream = _streamFor(_focusedDay);
-  late final Stream<Family> _familyStream =
-      Repository.instance.watchFamily(widget.familyId);
+  late final Stream<Family> _familyStream = Repository.instance.watchFamily(
+    widget.familyId,
+  );
   List<CalendarEvent> _events = const [];
+
+  /// 取り込んだ X の投稿（本人のものだけ）。
+  late Stream<Map<String, List<XPost>>> _xStream = _xStreamFor(
+    DateTime(_focusedDay.year, _focusedDay.month - 1, 1),
+    days: 100,
+  );
+  Map<String, List<XPost>> _xPosts = const {};
+  bool _showX = true;
+
+  Stream<Map<String, List<XPost>>> _xStreamFor(
+    DateTime from, {
+    required int days,
+  }) {
+    return Repository.instance.watchXPosts(
+      widget.user.uid,
+      from: from,
+      to: DateTime(from.year, from.month, from.day + days),
+    );
+  }
 
   static DateTime _today() {
     final now = DateTime.now();
@@ -74,17 +98,23 @@ class _CalendarPageState extends State<CalendarPage> {
     setState(() {
       _focusedDay = focusedDay;
       _eventsStream = _streamFor(focusedDay);
+      _xStream = _xStreamFor(
+        DateTime(focusedDay.year, focusedDay.month - 1, 1),
+        days: 100,
+      );
     });
   }
 
   void _openEditor(Family family, {CalendarEvent? event, DateTime? day}) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => EventEditorPage(
-        family: family,
-        initialDay: day ?? _selectedDay,
-        event: event,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => EventEditorPage(
+          family: family,
+          initialDay: day ?? _selectedDay,
+          event: event,
+        ),
       ),
-    ));
+    );
   }
 
   /// 日付をタップしたときに、その日の予定を下から表示する。
@@ -98,10 +128,11 @@ class _CalendarPageState extends State<CalendarPage> {
         stream: _streamFor(day),
         initialData: _events,
         builder: (context, snap) {
-          final dayEvents = (snap.data ?? const <CalendarEvent>[])
-              .where((e) => e.occursOn(day))
-              .toList()
-            ..sort(_compareEvents);
+          final dayEvents =
+              (snap.data ?? const <CalendarEvent>[])
+                  .where((e) => e.occursOn(day))
+                  .toList()
+                ..sort(_compareEvents);
           return ConstrainedBox(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.sizeOf(context).height * 0.6,
@@ -120,9 +151,7 @@ class _CalendarPageState extends State<CalendarPage> {
                           children: [
                             Text(
                               DateFormat('M月d日(E)', 'ja').format(day),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
+                              style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(color: _dayColor(day)),
                             ),
                             if (holidayName(day) case final name?)
@@ -144,30 +173,51 @@ class _CalendarPageState extends State<CalendarPage> {
                     ],
                   ),
                 ),
-                if (dayEvents.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(20, 16, 20, 40),
-                    child: Text('予定はありません'),
-                  )
-                else
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.only(bottom: 24),
-                      itemCount: dayEvents.length,
-                      itemBuilder: (context, i) {
-                        final e = dayEvents[i];
-                        return _EventTile(
-                          event: e,
-                          family: family,
-                          onTap: () {
-                            Navigator.pop(sheetContext);
-                            _openEditor(family, event: e);
-                          },
-                        );
-                      },
-                    ),
+                Flexible(
+                  child: StreamBuilder<Map<String, List<XPost>>>(
+                    stream: _xStreamFor(day, days: 1),
+                    initialData: {
+                      dayKey(day): _xPosts[dayKey(day)] ?? const [],
+                    },
+                    builder: (context, xSnap) {
+                      final dayPosts = xSnap.data?[dayKey(day)];
+                      final posts = _showX && dayPosts != null
+                          ? dayPosts
+                          : const <XPost>[];
+                      return ListView(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.only(bottom: 24),
+                        children: [
+                          if (dayEvents.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.fromLTRB(20, 16, 20, 24),
+                              child: Text('予定はありません'),
+                            ),
+                          for (final e in dayEvents)
+                            _EventTile(
+                              event: e,
+                              family: family,
+                              onTap: () {
+                                Navigator.pop(sheetContext);
+                                _openEditor(family, event: e);
+                              },
+                            ),
+                          if (posts.isNotEmpty) ...[
+                            const Divider(),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+                              child: Text(
+                                '𝕏 この日の投稿（${posts.length}）',
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                            ),
+                            for (final p in posts) _XPostTile(post: p),
+                          ],
+                        ],
+                      );
+                    },
                   ),
+                ),
               ],
             ),
           );
@@ -177,10 +227,12 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   void _showFamily(Family family) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) =>
-          FamilySettingsPage(familyId: family.id, uid: widget.user.uid),
-    ));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            FamilySettingsPage(familyId: family.id, uid: widget.user.uid),
+      ),
+    );
   }
 
   @override
@@ -189,37 +241,61 @@ class _CalendarPageState extends State<CalendarPage> {
       stream: _familyStream,
       builder: (context, familySnap) {
         final family = familySnap.data;
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(family?.name ?? 'カレンさん'),
-            actions: [
-              if (family != null)
-                IconButton(
-                  tooltip: 'メンバー・予定者',
-                  icon: const Icon(Icons.group_add_outlined),
-                  onPressed: () => _showFamily(family),
-                ),
-              IconButton(
-                tooltip: 'ログアウト',
-                icon: const Icon(Icons.logout),
-                onPressed: () => FirebaseAuth.instance.signOut(),
-              ),
-            ],
-          ),
-          floatingActionButton: family == null
-              ? null
-              : FloatingActionButton(
-                  tooltip: '予定を追加',
-                  onPressed: () => _openEditor(family),
-                  child: const Icon(Icons.add),
-                ),
-          body: familySnap.hasError
-              ? Center(child: Text('読み込めませんでした：${familySnap.error}'))
-              : family == null
-                  ? const Center(child: CircularProgressIndicator())
-                  : _buildCalendar(family),
+        return StreamBuilder<Map<String, List<XPost>>>(
+          stream: _xStream,
+          builder: (context, xSnap) {
+            // 取り込みがない・読めないときは空として扱う（予定の表示には影響させない）
+            _xPosts = xSnap.data ?? const {};
+            return _buildScaffold(family, familySnap);
+          },
         );
       },
+    );
+  }
+
+  Widget _buildScaffold(Family? family, AsyncSnapshot<Family> familySnap) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(family?.name ?? 'カレンさん'),
+        actions: [
+          if (_xPosts.isNotEmpty)
+            IconButton(
+              tooltip: _showX ? 'X の投稿を隠す' : 'X の投稿を表示',
+              isSelected: _showX,
+              onPressed: () => setState(() => _showX = !_showX),
+              icon: Text(
+                '𝕏',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: _showX ? null : Theme.of(context).disabledColor,
+                ),
+              ),
+            ),
+          if (family != null)
+            IconButton(
+              tooltip: 'メンバー・予定者',
+              icon: const Icon(Icons.group_add_outlined),
+              onPressed: () => _showFamily(family),
+            ),
+          IconButton(
+            tooltip: 'ログアウト',
+            icon: const Icon(Icons.logout),
+            onPressed: () => FirebaseAuth.instance.signOut(),
+          ),
+        ],
+      ),
+      floatingActionButton: family == null
+          ? null
+          : FloatingActionButton(
+              tooltip: '予定を追加',
+              onPressed: () => _openEditor(family),
+              child: const Icon(Icons.add),
+            ),
+      body: familySnap.hasError
+          ? Center(child: Text('読み込めませんでした：${familySnap.error}'))
+          : family == null
+          ? const Center(child: CircularProgressIndicator())
+          : _buildCalendar(family),
     );
   }
 
@@ -258,17 +334,25 @@ class _CalendarPageState extends State<CalendarPage> {
                     daysOfWeekHeight: 24,
                     selectedDayPredicate: (day) => isSameDay(day, _selectedDay),
                     onDaySelected: (selected, focused) {
-                      final day =
-                          DateTime(selected.year, selected.month, selected.day);
+                      final day = DateTime(
+                        selected.year,
+                        selected.month,
+                        selected.day,
+                      );
                       setState(() {
                         _selectedDay = day;
                         _focusedDay = focused;
                       });
                       _showDay(family, day);
                     },
-                    onDayLongPressed: (selected, _) => _openEditor(family,
-                        day: DateTime(
-                            selected.year, selected.month, selected.day)),
+                    onDayLongPressed: (selected, _) => _openEditor(
+                      family,
+                      day: DateTime(
+                        selected.year,
+                        selected.month,
+                        selected.day,
+                      ),
+                    ),
                     onPageChanged: _onPageChanged,
                     calendarBuilders: CalendarBuilders(
                       dowBuilder: (context, day) => Center(
@@ -276,7 +360,8 @@ class _CalendarPageState extends State<CalendarPage> {
                           DateFormat.E('ja').format(day),
                           style: TextStyle(
                             fontSize: 12,
-                            color: _weekdayColor(day) ??
+                            color:
+                                _weekdayColor(day) ??
                                 Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -287,6 +372,7 @@ class _CalendarPageState extends State<CalendarPage> {
                           day: d,
                           events: _eventsOn(d),
                           holiday: holidayName(d),
+                          xCount: _showX ? _xPosts[dayKey(d)]?.length ?? 0 : 0,
                           family: family,
                           isToday: isSameDay(d, DateTime.now()),
                           isSelected: isSameDay(d, _selectedDay),
@@ -316,6 +402,7 @@ class DayCell extends StatelessWidget {
     required this.isSelected,
     required this.isOutside,
     this.holiday,
+    this.xCount = 0,
   });
 
   final DateTime day;
@@ -323,6 +410,9 @@ class DayCell extends StatelessWidget {
 
   /// 祝日・休日の名前（なければ null）。
   final String? holiday;
+
+  /// その日の X の投稿数（取り込んだ人だけに表示）。
+  final int xCount;
   final Family family;
   final bool isToday;
   final bool isSelected;
@@ -342,7 +432,9 @@ class DayCell extends StatelessWidget {
       opacity: isOutside ? 0.45 : 1,
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected ? scheme.primaryContainer.withValues(alpha: 0.4) : null,
+          color: isSelected
+              ? scheme.primaryContainer.withValues(alpha: 0.4)
+              : null,
           border: Border(
             top: BorderSide(color: scheme.outlineVariant, width: 0.5),
             left: BorderSide(color: scheme.outlineVariant, width: 0.5),
@@ -356,7 +448,9 @@ class DayCell extends StatelessWidget {
                 ? 0
                 : ((room + _chipGap) / (_chipHeight + _chipGap)).floor();
             // 入りきらないときは最後の 1 行を「+n」にする。
-            final shown = events.length <= fit ? events.length : (fit - 1).clamp(0, fit);
+            final shown = events.length <= fit
+                ? events.length
+                : (fit - 1).clamp(0, fit);
             // 帯を 1 行も置けないほど小さいマスでは「+n」も出さない。
             final hidden = fit == 0 ? 0 : events.length - shown;
             return Column(
@@ -373,7 +467,9 @@ class DayCell extends StatelessWidget {
                         alignment: Alignment.center,
                         decoration: isToday
                             ? BoxDecoration(
-                                color: scheme.primary, shape: BoxShape.circle)
+                                color: scheme.primary,
+                                shape: BoxShape.circle,
+                              )
                             : null,
                         child: Text(
                           '${day.day}',
@@ -398,6 +494,21 @@ class DayCell extends StatelessWidget {
                             ),
                           ),
                         ),
+                      if (holiday == null && xCount > 0) const Spacer(),
+                      if (xCount > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 2),
+                          child: Text(
+                            '𝕏$xCount',
+                            maxLines: 1,
+                            softWrap: false,
+                            style: TextStyle(
+                              fontSize: 8,
+                              height: 1.1,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -413,7 +524,9 @@ class DayCell extends StatelessWidget {
                       child: Text(
                         '+$hidden',
                         style: TextStyle(
-                            fontSize: 10, color: scheme.onSurfaceVariant),
+                          fontSize: 10,
+                          color: scheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ),
@@ -449,7 +562,10 @@ class _EventChip extends StatelessWidget {
     const radius = Radius.circular(3);
     return Container(
       height: DayCell._chipHeight,
-      margin: EdgeInsets.only(left: isFirstDay ? 2 : 0, right: isLastDay ? 2 : 0),
+      margin: EdgeInsets.only(
+        left: isFirstDay ? 2 : 0,
+        right: isLastDay ? 2 : 0,
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 3),
       alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
@@ -522,8 +638,10 @@ class _EventTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(event.title,
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    event.title,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     '${_timeText()}   ${family.nameOf(event.owner)}',
@@ -533,6 +651,50 @@ class _EventTile extends StatelessWidget {
               ),
             ),
             const Icon(Icons.chevron_right),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 日付をタップしたときの一覧に出す X の投稿 1 件。押すと X で開く。
+class _XPostTile extends StatelessWidget {
+  const _XPostTile({required this.post});
+
+  final XPost post;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = Theme.of(context).textTheme.bodySmall;
+    return InkWell(
+      onTap: () => launchUrl(post.url, mode: LaunchMode.externalApplication),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 44,
+              child: Text(
+                DateFormat('H:mm').format(post.postedAt.toLocal()),
+                style: muted,
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(post.text.isEmpty ? '（本文なし）' : post.text),
+                  const SizedBox(height: 2),
+                  Text(
+                    [post.kind.label, if (post.hasMedia) '画像あり'].join('・'),
+                    style: muted,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.open_in_new, size: 16),
           ],
         ),
       ),

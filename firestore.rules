@@ -38,6 +38,11 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
+
+      // 取り込んだ X の投稿は本人だけが読み書きできる
+      match /xdays/{day} {
+        allow read, write: if signedIn() && request.auth.uid == uid;
+      }
     }
 
     match /invites/{code} {
