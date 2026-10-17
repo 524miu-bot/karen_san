@@ -87,7 +87,8 @@ class ZipReader {
       }
       final recordOffset = _u64(tailData, locator + 8);
       final record = ByteData.sublistView(
-          await source.read(recordOffset, recordOffset + 56));
+        await source.read(recordOffset, recordOffset + 56),
+      );
       if (record.getUint32(0, Endian.little) != 0x06064b50) {
         throw ZipFormatException('ZIP64 の目次が壊れています');
       }
@@ -111,8 +112,10 @@ class ZipReader {
       final extraLen = d.getUint16(p + 30, Endian.little);
       final commentLen = d.getUint16(p + 32, Endian.little);
       var offset = d.getUint32(p + 42, Endian.little);
-      final name = utf8.decode(dir.sublist(p + 46, p + 46 + nameLen),
-          allowMalformed: true);
+      final name = utf8.decode(
+        dir.sublist(p + 46, p + 46 + nameLen),
+        allowMalformed: true,
+      );
 
       // ZIP64 の拡張フィールドに本当の大きさ・位置が入っていることがある
       var e = p + 46 + nameLen;
@@ -135,13 +138,15 @@ class ZipReader {
         e += 4 + size;
       }
 
-      entries.add(ZipEntry(
-        name: name,
-        method: method,
-        compressedSize: compressed,
-        uncompressedSize: uncompressed,
-        localHeaderOffset: offset,
-      ));
+      entries.add(
+        ZipEntry(
+          name: name,
+          method: method,
+          compressedSize: compressed,
+          uncompressedSize: uncompressed,
+          localHeaderOffset: offset,
+        ),
+      );
       p = extraEnd + commentLen;
     }
     return ZipReader._(source, entries);
@@ -149,26 +154,33 @@ class ZipReader {
 
   /// [entry] の中身を取り出す。
   Future<Uint8List> extract(ZipEntry entry) async {
-    final header = ByteData.sublistView(await _source.read(
-        entry.localHeaderOffset, entry.localHeaderOffset + 30));
+    final header = ByteData.sublistView(
+      await _source.read(entry.localHeaderOffset, entry.localHeaderOffset + 30),
+    );
     if (header.getUint32(0, Endian.little) != 0x04034b50) {
       throw ZipFormatException('${entry.name} の位置が正しくありません');
     }
-    final dataStart = entry.localHeaderOffset +
+    final dataStart =
+        entry.localHeaderOffset +
         30 +
         header.getUint16(26, Endian.little) +
         header.getUint16(28, Endian.little);
-    final data =
-        await _source.read(dataStart, dataStart + entry.compressedSize);
+    final data = await _source.read(
+      dataStart,
+      dataStart + entry.compressedSize,
+    );
     switch (entry.method) {
       case 0:
         return data;
       case 8:
-        return Inflate(data, uncompressedSize: entry.uncompressedSize)
-            .getBytes();
+        return Inflate(
+          data,
+          uncompressedSize: entry.uncompressedSize,
+        ).getBytes();
       default:
         throw ZipFormatException(
-            '${entry.name} は対応していない圧縮形式です（${entry.method}）');
+          '${entry.name} は対応していない圧縮形式です（${entry.method}）',
+        );
     }
   }
 

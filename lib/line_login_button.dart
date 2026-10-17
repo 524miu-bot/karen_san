@@ -80,7 +80,9 @@ class _LineLoginButtonState extends State<LineLoginButton> {
               borderRadius: BorderRadius.circular(6),
               border: _enabled
                   ? null
-                  : Border.all(color: const Color(0xFFE5E5E5).withValues(alpha: 0.6)),
+                  : Border.all(
+                      color: const Color(0xFFE5E5E5).withValues(alpha: 0.6),
+                    ),
             ),
             // 重ね順：基本色 → マウスオーバー/押下の黒 → 縦線・アイコン・文字
             child: Stack(

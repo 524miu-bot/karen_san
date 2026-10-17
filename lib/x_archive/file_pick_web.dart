@@ -46,10 +46,11 @@ Future<List<PickedFile>> pickArchiveFiles() {
     if (!completer.isCompleted) completer.complete(picked);
   }.toJS;
   input.addEventListener(
-      'cancel',
-      (web.Event _) {
-        if (!completer.isCompleted) completer.complete(const []);
-      }.toJS);
+    'cancel',
+    (web.Event _) {
+      if (!completer.isCompleted) completer.complete(const []);
+    }.toJS,
+  );
   input.click();
   return completer.future;
 }

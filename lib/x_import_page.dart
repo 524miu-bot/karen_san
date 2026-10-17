@@ -59,9 +59,11 @@ class _XImportPageState extends State<XImportPage> {
         }
       }
       if (found == 0) {
-        setState(() => _error =
-            '投稿のファイルが見つかりませんでした。X からダウンロードした ZIP ファイル、'
-            'または中の data フォルダにある tweets.js・like.js を選んでください。');
+        setState(
+          () => _error =
+              '投稿のファイルが見つかりませんでした。X からダウンロードした ZIP ファイル、'
+              'または中の data フォルダにある tweets.js・like.js を選んでください。',
+        );
         return;
       }
       setState(() => _status = '保存しています…');
@@ -72,8 +74,9 @@ class _XImportPageState extends State<XImportPage> {
           if (mounted) setState(() => _status = '保存しています…（$done / $total 日）');
         },
       );
-      setState(() => _status =
-          '取り込みました：投稿 ${reader.tweets} 件、いいね ${reader.likes} 件');
+      setState(
+        () => _status = '取り込みました：投稿 ${reader.tweets} 件、いいね ${reader.likes} 件',
+      );
       await _refreshCount();
     } catch (e) {
       setState(() => _error = '取り込めませんでした：$e');
@@ -169,8 +172,10 @@ class _XImportPageState extends State<XImportPage> {
               ],
               if (_error != null) ...[
                 const SizedBox(height: 8),
-                Text(_error!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ],
               const SizedBox(height: 24),
               const Divider(),

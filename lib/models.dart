@@ -74,28 +74,32 @@ class Family {
       name: d['name'] as String? ?? '',
       inviteCode: d['inviteCode'] as String? ?? '',
       memberIds: List<String>.from(d['memberIds'] as List? ?? const []),
-      memberNames: Map<String, String>.from(d['memberNames'] as Map? ?? const {}),
-      memberColors: (d['memberColors'] as Map? ?? const {})
-          .map((k, v) => MapEntry(k as String, (v as num).toInt())),
+      memberNames: Map<String, String>.from(
+        d['memberNames'] as Map? ?? const {},
+      ),
+      memberColors: (d['memberColors'] as Map? ?? const {}).map(
+        (k, v) => MapEntry(k as String, (v as num).toInt()),
+      ),
       people: people,
     );
   }
 
   /// ログインしない予定者の ID（追加した順）。
-  List<String> get personIds => (people.values.toList()
-        ..sort((a, b) => a.order.compareTo(b.order)))
-      .map((p) => p.id)
-      .toList();
+  List<String> get personIds =>
+      (people.values.toList()..sort((a, b) => a.order.compareTo(b.order)))
+          .map((p) => p.id)
+          .toList();
 
   /// 予定を割り当てられる人すべて（メンバー → ログインしない予定者 → みんな）。
-  List<String> get ownerIds =>
-      [...memberIds, ...personIds, CalendarEvent.everyone];
+  List<String> get ownerIds => [
+    ...memberIds,
+    ...personIds,
+    CalendarEvent.everyone,
+  ];
 
   String nameOf(String ownerId) {
     if (ownerId == CalendarEvent.everyone) return 'みんな';
-    return memberNames[ownerId] ??
-        people[ownerId]?.name ??
-        '（いなくなった人）';
+    return memberNames[ownerId] ?? people[ownerId]?.name ?? '（いなくなった人）';
   }
 
   Color colorOf(String ownerId) {
@@ -160,16 +164,16 @@ class CalendarEvent {
   }
 
   Map<String, dynamic> toMap() => {
-        'title': title,
-        'start': Timestamp.fromDate(start),
-        'end': Timestamp.fromDate(end),
-        'allDay': allDay,
-        'note': note,
-        'createdBy': createdBy,
-        'createdByName': createdByName,
-        'ownerId': ownerId,
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
+    'title': title,
+    'start': Timestamp.fromDate(start),
+    'end': Timestamp.fromDate(end),
+    'allDay': allDay,
+    'note': note,
+    'createdBy': createdBy,
+    'createdByName': createdByName,
+    'ownerId': ownerId,
+    'updatedAt': FieldValue.serverTimestamp(),
+  };
 
   /// この予定が [day] の日にかかっているか。
   bool occursOn(DateTime day) {

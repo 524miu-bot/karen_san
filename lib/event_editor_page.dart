@@ -24,10 +24,12 @@ class EventEditorPage extends StatefulWidget {
 }
 
 class _EventEditorPageState extends State<EventEditorPage> {
-  late final _titleController =
-      TextEditingController(text: widget.event?.title ?? '');
-  late final _noteController =
-      TextEditingController(text: widget.event?.note ?? '');
+  late final _titleController = TextEditingController(
+    text: widget.event?.title ?? '',
+  );
+  late final _noteController = TextEditingController(
+    text: widget.event?.note ?? '',
+  );
   late bool _allDay;
   late DateTime _start;
   late DateTime _end;
@@ -41,8 +43,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
   String get _familyId => widget.family.id;
 
-  late final Stream<Family> _familyStream =
-      Repository.instance.watchFamily(widget.family.id);
+  late final Stream<Family> _familyStream = Repository.instance.watchFamily(
+    widget.family.id,
+  );
 
   @override
   void initState() {
@@ -109,7 +112,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
       return;
     }
     // 終日の予定は「開始日 0:00 〜 終了日の翌日 0:00」で保存する。
-    final start = _allDay ? DateTime(_start.year, _start.month, _start.day) : _start;
+    final start = _allDay
+        ? DateTime(_start.year, _start.month, _start.day)
+        : _start;
     final end = _allDay
         ? DateTime(_end.year, _end.month, _end.day).add(const Duration(days: 1))
         : _end;
@@ -125,8 +130,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
       allDay: _allDay,
       note: _noteController.text.trim(),
       createdBy: widget.event?.createdBy ?? _uid,
-      createdByName:
-          widget.event?.createdByName ?? widget.family.nameOf(_uid),
+      createdByName: widget.event?.createdByName ?? widget.family.nameOf(_uid),
       ownerId: _ownerId,
     );
     setState(() {
@@ -227,7 +231,8 @@ class _EventEditorPageState extends State<EventEditorPage> {
                       ])
                         ChoiceChip(
                           avatar: CircleAvatar(
-                              backgroundColor: family.colorOf(id)),
+                            backgroundColor: family.colorOf(id),
+                          ),
                           label: Text(family.nameOf(id)),
                           selected: _ownerId == id,
                           showCheckmark: false,
@@ -284,7 +289,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
               ),
               if (!_isNew && widget.event!.createdByName.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text('登録した人：${widget.family.memberNames[widget.event!.createdBy] ?? widget.event!.createdByName}'),
+                Text(
+                  '登録した人：${widget.family.memberNames[widget.event!.createdBy] ?? widget.event!.createdByName}',
+                ),
               ],
               if (_error != null) ...[
                 const SizedBox(height: 12),

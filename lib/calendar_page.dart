@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +10,7 @@ import 'event_editor_page.dart';
 import 'family_settings_page.dart';
 import 'holidays.dart';
 import 'models.dart';
+import 'oshi.dart';
 import 'repository.dart';
 import 'x_archive/x_archive.dart';
 
@@ -65,6 +68,24 @@ class _CalendarPageState extends State<CalendarPage> {
   );
   Map<String, List<XPost>> _xPosts = const {};
   bool _showX = true;
+
+  /// 推し（本人だけの設定）。日付を押したときに X 検索のボタンを出す。
+  late final StreamSubscription<List<Oshi>> _oshiSub = Repository.instance
+      .watchOshi(widget.user.uid)
+      .listen((list) => setState(() => _oshi = list), onError: (_) {});
+  List<Oshi> _oshi = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _oshiSub; // 読み込みを始める
+  }
+
+  @override
+  void dispose() {
+    _oshiSub.cancel();
+    super.dispose();
+  }
 
   Stream<Map<String, List<XPost>>> _xStreamFor(
     DateTime from, {
@@ -212,6 +233,33 @@ class _CalendarPageState extends State<CalendarPage> {
                               ),
                             ),
                             for (final p in posts) _XPostTile(post: p),
+                          ],
+                          if (_oshi.isNotEmpty) ...[
+                            const Divider(),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+                              child: Text(
+                                '推しのこの日の投稿',
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                            ),
+                            for (final o in _oshi)
+                              ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                leading: const Icon(Icons.favorite_outline),
+                                title: Text(o.label),
+                                subtitle: const Text('X で見る'),
+                                trailing: const Icon(
+                                  Icons.open_in_new,
+                                  size: 16,
+                                ),
+                                onTap: () => launchUrl(
+                                  o.searchUrl(day),
+                                  mode: LaunchMode.externalApplication,
+                                ),
+                              ),
                           ],
                         ],
                       );

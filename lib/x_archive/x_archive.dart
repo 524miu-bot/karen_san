@@ -14,9 +14,10 @@ enum XPostKind {
   const XPostKind(this.label);
   final String label;
 
-  static XPostKind fromCode(String? code) =>
-      XPostKind.values.firstWhere((k) => k.name == code,
-          orElse: () => XPostKind.post);
+  static XPostKind fromCode(String? code) => XPostKind.values.firstWhere(
+    (k) => k.name == code,
+    orElse: () => XPostKind.post,
+  );
 }
 
 /// カレンさんに取り込んだ X の投稿 1 件。
@@ -53,21 +54,37 @@ DateTime? snowflakeTime(String id) {
 }
 
 const _months = {
-  'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
-  'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12,
+  'Jan': 1,
+  'Feb': 2,
+  'Mar': 3,
+  'Apr': 4,
+  'May': 5,
+  'Jun': 6,
+  'Jul': 7,
+  'Aug': 8,
+  'Sep': 9,
+  'Oct': 10,
+  'Nov': 11,
+  'Dec': 12,
 };
 
 /// "Wed Oct 15 12:34:56 +0000 2026" の形式を読む。
 DateTime? parseXDate(String? s) {
   if (s == null) return null;
   final m = RegExp(
-          r'^\w{3} (\w{3}) (\d{1,2}) (\d{2}):(\d{2}):(\d{2}) ([+-])(\d{2})(\d{2}) (\d{4})$')
-      .firstMatch(s.trim());
+    r'^\w{3} (\w{3}) (\d{1,2}) (\d{2}):(\d{2}):(\d{2}) ([+-])(\d{2})(\d{2}) (\d{4})$',
+  ).firstMatch(s.trim());
   if (m == null) return null;
   final month = _months[m[1]];
   if (month == null) return null;
-  final utc = DateTime.utc(int.parse(m[9]!), month, int.parse(m[2]!),
-      int.parse(m[3]!), int.parse(m[4]!), int.parse(m[5]!));
+  final utc = DateTime.utc(
+    int.parse(m[9]!),
+    month,
+    int.parse(m[2]!),
+    int.parse(m[3]!),
+    int.parse(m[4]!),
+    int.parse(m[5]!),
+  );
   final offset = Duration(hours: int.parse(m[7]!), minutes: int.parse(m[8]!));
   return m[6] == '+' ? utc.subtract(offset) : utc.add(offset);
 }
@@ -90,10 +107,12 @@ String _unescapeHtml(String s) => s
 List<XPost> parseTweets(List<dynamic> items) {
   final posts = <XPost>[];
   for (final item in items) {
-    final t = (item is Map && item['tweet'] is Map ? item['tweet'] : item)
-        as Map<String, dynamic>;
+    final t =
+        (item is Map && item['tweet'] is Map ? item['tweet'] : item)
+            as Map<String, dynamic>;
     final id = (t['id_str'] ?? t['id'])?.toString();
-    final at = parseXDate(t['created_at'] as String?) ??
+    final at =
+        parseXDate(t['created_at'] as String?) ??
         (id == null ? null : snowflakeTime(id));
     if (id == null || at == null) continue;
 
@@ -120,16 +139,18 @@ List<XPost> parseTweets(List<dynamic> items) {
     final kind = text.startsWith('RT @')
         ? XPostKind.repost
         : t['in_reply_to_status_id_str'] != null ||
-                t['in_reply_to_status_id'] != null
-            ? XPostKind.reply
-            : XPostKind.post;
-    posts.add(XPost(
-      id: id,
-      text: text,
-      postedAt: at,
-      kind: kind,
-      hasMedia: media.isNotEmpty,
-    ));
+              t['in_reply_to_status_id'] != null
+        ? XPostKind.reply
+        : XPostKind.post;
+    posts.add(
+      XPost(
+        id: id,
+        text: text,
+        postedAt: at,
+        kind: kind,
+        hasMedia: media.isNotEmpty,
+      ),
+    );
   }
   return posts;
 }
@@ -138,18 +159,21 @@ List<XPost> parseTweets(List<dynamic> items) {
 List<XPost> parseLikes(List<dynamic> items) {
   final posts = <XPost>[];
   for (final item in items) {
-    final l = (item is Map && item['like'] is Map ? item['like'] : item)
-        as Map<String, dynamic>;
+    final l =
+        (item is Map && item['like'] is Map ? item['like'] : item)
+            as Map<String, dynamic>;
     final id = l['tweetId']?.toString();
     if (id == null) continue;
     final at = snowflakeTime(id);
     if (at == null) continue;
-    posts.add(XPost(
-      id: id,
-      text: _unescapeHtml((l['fullText'] as String? ?? '').trim()),
-      postedAt: at,
-      kind: XPostKind.like,
-    ));
+    posts.add(
+      XPost(
+        id: id,
+        text: _unescapeHtml((l['fullText'] as String? ?? '').trim()),
+        postedAt: at,
+        kind: XPostKind.like,
+      ),
+    );
   }
   return posts;
 }

@@ -65,7 +65,9 @@ class _LoginPageState extends State<LoginPage> {
     await _run(() async {
       if (_isSignUp) {
         await auth.createUserWithEmailAndPassword(
-            email: email, password: password);
+          email: email,
+          password: password,
+        );
       } else {
         await auth.signInWithEmailAndPassword(email: email, password: password);
       }
@@ -87,9 +89,8 @@ class _LoginPageState extends State<LoginPage> {
     await _run(() async {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('パスワード再設定メールを送信しました。')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('パスワード再設定メールを送信しました。')));
     });
   }
 
@@ -184,9 +185,8 @@ class _LoginPageState extends State<LoginPage> {
                       labelText: 'パスワード',
                       border: OutlineInputBorder(),
                     ),
-                    validator: (v) => (v == null || v.length < 6)
-                        ? '6 文字以上で入力してください'
-                        : null,
+                    validator: (v) =>
+                        (v == null || v.length < 6) ? '6 文字以上で入力してください' : null,
                     onFieldSubmitted: (_) => _submitEmail(),
                   ),
                   if (_error != null) ...[
@@ -194,7 +194,8 @@ class _LoginPageState extends State<LoginPage> {
                     Text(
                       _error!,
                       style: TextStyle(
-                          color: Theme.of(context).colorScheme.error),
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 16),
@@ -206,12 +207,12 @@ class _LoginPageState extends State<LoginPage> {
                     onPressed: _busy
                         ? null
                         : () => setState(() {
-                              _isSignUp = !_isSignUp;
-                              _error = null;
-                            }),
-                    child: Text(_isSignUp
-                        ? 'アカウントをお持ちの方はこちら（ログイン）'
-                        : 'はじめての方はこちら（新規登録）'),
+                            _isSignUp = !_isSignUp;
+                            _error = null;
+                          }),
+                    child: Text(
+                      _isSignUp ? 'アカウントをお持ちの方はこちら（ログイン）' : 'はじめての方はこちら（新規登録）',
+                    ),
                   ),
                   if (!_isSignUp)
                     TextButton(

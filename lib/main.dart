@@ -59,9 +59,7 @@ class AuthGate extends StatelessWidget {
           builder: (context, familySnap) {
             if (familySnap.hasError) {
               return Scaffold(
-                body: Center(
-                  child: Text('読み込めませんでした：${familySnap.error}'),
-                ),
+                body: Center(child: Text('読み込めませんでした：${familySnap.error}')),
               );
             }
             if (!familySnap.hasData &&
@@ -72,7 +70,10 @@ class AuthGate extends StatelessWidget {
             return familyId == null
                 ? FamilySetupPage(user: user)
                 : CalendarPage(
-                    key: ValueKey(familyId), user: user, familyId: familyId);
+                    key: ValueKey(familyId),
+                    user: user,
+                    familyId: familyId,
+                  );
           },
         );
       },

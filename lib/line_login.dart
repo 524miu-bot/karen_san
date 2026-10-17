@@ -2,7 +2,10 @@ import 'dart:math';
 
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'line_browser_stub.dart' if (dart.library.js_interop) 'line_browser_web.dart' as browser;
+
+import 'line_browser_stub.dart'
+    if (dart.library.js_interop) 'line_browser_web.dart'
+    as browser;
 
 /// LINE Developers の「LINE Login チャネル」のチャネル ID（公開してよい値）。
 /// チャネルシークレットはアプリに書かず、Cloud Functions 側に置く。
@@ -18,14 +21,20 @@ const _nonceKey = 'karen_san.line.nonce';
 /// LINE_REDIRECT_URIS に同じ値を登録しておく。
 String lineRedirectUri() {
   final base = Uri.base;
-  return Uri(scheme: base.scheme, host: base.host, port: base.port, path: '/')
-      .toString();
+  return Uri(
+    scheme: base.scheme,
+    host: base.host,
+    port: base.port,
+    path: '/',
+  ).toString();
 }
 
 String _randomToken() {
   final rand = Random.secure();
-  return List.generate(32, (_) => rand.nextInt(256).toRadixString(16).padLeft(2, '0'))
-      .join();
+  return List.generate(
+    32,
+    (_) => rand.nextInt(256).toRadixString(16).padLeft(2, '0'),
+  ).join();
 }
 
 /// LINE の認可画面の URL。
@@ -51,12 +60,14 @@ void startLineLogin() {
   final nonce = _randomToken();
   browser.sessionSet(_stateKey, state);
   browser.sessionSet(_nonceKey, nonce);
-  browser.navigateTo(lineAuthorizeUrl(
-    channelId: lineChannelId,
-    redirectUri: lineRedirectUri(),
-    state: state,
-    nonce: nonce,
-  ).toString());
+  browser.navigateTo(
+    lineAuthorizeUrl(
+      channelId: lineChannelId,
+      redirectUri: lineRedirectUri(),
+      state: state,
+      nonce: nonce,
+    ).toString(),
+  );
 }
 
 /// LINE ログインの戻りを処理した結果。
@@ -90,24 +101,28 @@ Future<LineLoginResult> completeLineLoginIfNeeded() async {
   _clearQueryFromAddressBar();
 
   if (params['error'] != null) {
-    return LineLoginFailure(params['error'] == 'access_denied'
-        ? 'LINE ログインがキャンセルされました。'
-        : 'LINE ログインに失敗しました（${params['error']}）。');
+    return LineLoginFailure(
+      params['error'] == 'access_denied'
+          ? 'LINE ログインがキャンセルされました。'
+          : 'LINE ログインに失敗しました（${params['error']}）。',
+    );
   }
   final code = params['code']!;
-  if (expectedState == null || nonce == null || params['state'] != expectedState) {
-    return LineLoginFailure(
-        'LINE ログインの確認に失敗しました（state）。もう一度お試しください。');
+  if (expectedState == null ||
+      nonce == null ||
+      params['state'] != expectedState) {
+    return LineLoginFailure('LINE ログインの確認に失敗しました（state）。もう一度お試しください。');
   }
 
   try {
-    final result = await FirebaseFunctions.instanceFor(region: 'asia-northeast1')
-        .httpsCallable('lineLogin')
-        .call<Map<String, dynamic>>({
-      'code': code,
-      'redirectUri': lineRedirectUri(),
-      'nonce': nonce,
-    });
+    final result =
+        await FirebaseFunctions.instanceFor(region: 'asia-northeast1')
+            .httpsCallable('lineLogin')
+            .call<Map<String, dynamic>>({
+              'code': code,
+              'redirectUri': lineRedirectUri(),
+              'nonce': nonce,
+            });
     final token = result.data['token'] as String;
     await FirebaseAuth.instance.signInWithCustomToken(token);
     return LineLoginSuccess();

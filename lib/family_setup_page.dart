@@ -14,8 +14,9 @@ class FamilySetupPage extends StatefulWidget {
 }
 
 class _FamilySetupPageState extends State<FamilySetupPage> {
-  late final _myNameController =
-      TextEditingController(text: Repository.defaultName(widget.user));
+  late final _myNameController = TextEditingController(
+    text: Repository.defaultName(widget.user),
+  );
   final _familyNameController = TextEditingController(text: 'わが家');
   final _codeController = TextEditingController();
   bool _busy = false;
@@ -60,11 +61,13 @@ class _FamilySetupPageState extends State<FamilySetupPage> {
       setState(() => _error = 'グループ名を入力してください。');
       return;
     }
-    await _run(() => Repository.instance.createFamily(
-          user: widget.user,
-          familyName: familyName,
-          myName: myName,
-        ));
+    await _run(
+      () => Repository.instance.createFamily(
+        user: widget.user,
+        familyName: familyName,
+        myName: myName,
+      ),
+    );
   }
 
   Future<void> _join() async {
@@ -150,7 +153,9 @@ class _FamilySetupPageState extends State<FamilySetupPage> {
                   const SizedBox(height: 16),
                   Text(
                     _error!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
               ],

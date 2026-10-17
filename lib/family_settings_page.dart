@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'models.dart';
 import 'repository.dart';
+import 'oshi_page.dart';
 import 'x_import_page.dart';
 
 /// 名前と色を入力するダイアログ。キャンセルなら null。
@@ -136,8 +137,9 @@ class ColorChoices extends StatelessWidget {
 
 /// 予定者を追加するダイアログを出し、追加した人の ID を返す（キャンセルなら null）。
 Future<String?> addPersonFlow(BuildContext context, Family family) async {
-  final nextColor = memberPalette[
-      (family.memberIds.length + family.people.length) % memberPalette.length];
+  final nextColor =
+      memberPalette[(family.memberIds.length + family.people.length) %
+          memberPalette.length];
   final result = await showNameColorDialog(
     context,
     title: '予定者を追加',
@@ -145,25 +147,34 @@ Future<String?> addPersonFlow(BuildContext context, Family family) async {
     okLabel: '追加',
   );
   if (result == null) return null;
-  return Repository.instance
-      .addPerson(family.id, result.name, color: result.color);
+  return Repository.instance.addPerson(
+    family.id,
+    result.name,
+    color: result.color,
+  );
 }
 
 /// メンバー・予定者・招待コードの設定画面。
 class FamilySettingsPage extends StatelessWidget {
-  const FamilySettingsPage({super.key, required this.familyId, required this.uid});
+  const FamilySettingsPage({
+    super.key,
+    required this.familyId,
+    required this.uid,
+  });
 
   final String familyId;
   final String uid;
 
-  Future<void> _run(BuildContext context, Future<void> Function() action) async {
+  Future<void> _run(
+    BuildContext context,
+    Future<void> Function() action,
+  ) async {
     try {
       await action();
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('保存できませんでした：$e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('保存できませんでした：$e')));
     }
   }
 
@@ -190,9 +201,14 @@ class FamilySettingsPage extends StatelessWidget {
     );
     if (result == null || !context.mounted) return;
     await _run(
-        context,
-        () => Repository.instance
-            .updatePerson(f.id, p.id, name: result.name, color: result.color));
+      context,
+      () => Repository.instance.updatePerson(
+        f.id,
+        p.id,
+        name: result.name,
+        color: result.color,
+      ),
+    );
   }
 
   Future<void> _removePerson(BuildContext context, Family f, Person p) async {
@@ -236,7 +252,9 @@ class FamilySettingsPage extends StatelessWidget {
                         _header(context, 'ログインしているメンバー'),
                         for (final id in f.memberIds)
                           ListTile(
-                            leading: CircleAvatar(backgroundColor: f.colorOf(id)),
+                            leading: CircleAvatar(
+                              backgroundColor: f.colorOf(id),
+                            ),
                             title: Text(f.nameOf(id)),
                             subtitle: id == uid ? const Text('あなた') : null,
                             trailing: id == uid
@@ -255,7 +273,9 @@ class FamilySettingsPage extends StatelessWidget {
                         ),
                         for (final id in f.personIds)
                           ListTile(
-                            leading: CircleAvatar(backgroundColor: f.colorOf(id)),
+                            leading: CircleAvatar(
+                              backgroundColor: f.colorOf(id),
+                            ),
                             title: Text(f.people[id]!.name),
                             onTap: () => _editPerson(context, f, f.people[id]!),
                             trailing: IconButton(
@@ -279,11 +299,27 @@ class FamilySettingsPage extends StatelessWidget {
                             child: Text('𝕏'),
                           ),
                           title: const Text('X の投稿を取り込む'),
-                          subtitle: const Text('日付を押すと、その日の投稿やいいねを読めます。あなただけが見られます。'),
+                          subtitle: const Text(
+                            '日付を押すと、その日の投稿やいいねを読めます。あなただけが見られます。',
+                          ),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
-                                builder: (_) => XImportPage(uid: uid)),
+                              builder: (_) => XImportPage(uid: uid),
+                            ),
+                          ),
+                        ),
+                        ListTile(
+                          leading: const CircleAvatar(
+                            child: Icon(Icons.favorite_outline),
+                          ),
+                          title: const Text('推しの X を登録'),
+                          subtitle: const Text('日付を押すと、推しのその日の投稿を X で開けます。'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => OshiPage(uid: uid),
+                            ),
                           ),
                         ),
                         const Divider(),
@@ -294,16 +330,17 @@ class FamilySettingsPage extends StatelessWidget {
                             style: Theme.of(context).textTheme.headlineSmall,
                           ),
                           subtitle: const Text(
-                              '家族にこのコードを伝えると、ログインして同じカレンダーに参加できます。'),
+                            '家族にこのコードを伝えると、ログインして同じカレンダーに参加できます。',
+                          ),
                           trailing: IconButton(
                             tooltip: 'コピー',
                             icon: const Icon(Icons.copy),
                             onPressed: () {
                               Clipboard.setData(
-                                  ClipboardData(text: f.inviteCode));
+                                ClipboardData(text: f.inviteCode),
+                              );
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('招待コードをコピーしました')),
+                                const SnackBar(content: Text('招待コードをコピーしました')),
                               );
                             },
                           ),
@@ -318,7 +355,7 @@ class FamilySettingsPage extends StatelessWidget {
   }
 
   Widget _header(BuildContext context, String text) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-        child: Text(text, style: Theme.of(context).textTheme.titleSmall),
-      );
+    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+    child: Text(text, style: Theme.of(context).textTheme.titleSmall),
+  );
 }

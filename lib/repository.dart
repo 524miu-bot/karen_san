@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/painting.dart';
 
 import 'models.dart';
+import 'oshi.dart';
 import 'x_archive/x_archive.dart';
 
 /// Firestore の読み書きをまとめたもの。
@@ -31,9 +32,8 @@ class Repository {
       _familyDoc(familyId).collection('events');
 
   /// ログイン中のユーザーが所属する家族 ID（未所属なら null）。
-  Stream<String?> watchFamilyId(String uid) => _userDoc(uid)
-      .snapshots()
-      .map((s) => s.data()?['familyId'] as String?);
+  Stream<String?> watchFamilyId(String uid) =>
+      _userDoc(uid).snapshots().map((s) => s.data()?['familyId'] as String?);
 
   Stream<Family> watchFamily(String familyId) =>
       _familyDoc(familyId).snapshots().map(Family.fromDoc);
@@ -113,8 +113,12 @@ class Repository {
     return id;
   }
 
-  Future<void> updatePerson(String familyId, String personId,
-      {String? name, Color? color}) {
+  Future<void> updatePerson(
+    String familyId,
+    String personId, {
+    String? name,
+    Color? color,
+  }) {
     return _familyDoc(familyId).update({
       'people.$personId.name': ?name,
       if (color != null) 'people.$personId.color': color.toARGB32(),
@@ -141,10 +145,8 @@ class Repository {
 
   Future<void> saveEvent(String familyId, CalendarEvent event) {
     if (event.id == null) {
-      return _events(familyId).add({
-        ...event.toMap(),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      return _events(familyId)
+          .add({...event.toMap(), 'createdAt': FieldValue.serverTimestamp()});
     }
     return _events(familyId).doc(event.id).update(event.toMap());
   }
@@ -178,8 +180,10 @@ class Repository {
     for (var i = 0; i < days.length; i += perBatch) {
       final batch = _db.batch();
       for (final day in days.skip(i).take(perBatch)) {
-        batch.set(_xDays(uid).doc(day), {'date': day, 'posts': byDay[day]},
-            SetOptions(merge: true));
+        batch.set(_xDays(uid).doc(day), {
+          'date': day,
+          'posts': byDay[day],
+        }, SetOptions(merge: true));
       }
       await batch.commit();
       onProgress?.call((i + perBatch).clamp(0, days.length), days.length);
@@ -196,22 +200,22 @@ class Repository {
         .where('date', isGreaterThanOrEqualTo: dayKey(from))
         .where('date', isLessThan: dayKey(to))
         .snapshots()
-        .map((q) => {
-              for (final doc in q.docs) doc.id: _xPostsOf(doc.data()),
-            });
+        .map((q) => {for (final doc in q.docs) doc.id: _xPostsOf(doc.data())});
   }
 
   static List<XPost> _xPostsOf(Map<String, dynamic> data) {
     final posts = <XPost>[];
     (data['posts'] as Map? ?? const {}).forEach((id, v) {
       final m = v as Map;
-      posts.add(XPost(
-        id: id as String,
-        text: m['t'] as String? ?? '',
-        postedAt: (m['at'] as Timestamp).toDate(),
-        kind: XPostKind.fromCode(m['k'] as String?),
-        hasMedia: m['m'] as bool? ?? false,
-      ));
+      posts.add(
+        XPost(
+          id: id as String,
+          text: m['t'] as String? ?? '',
+          postedAt: (m['at'] as Timestamp).toDate(),
+          kind: XPostKind.fromCode(m['k'] as String?),
+          hasMedia: m['m'] as bool? ?? false,
+        ),
+      );
     });
     return posts..sort((a, b) => a.postedAt.compareTo(b.postedAt));
   }
@@ -232,4 +236,17 @@ class Repository {
       await batch.commit();
     }
   }
+
+  // ---- 推し（X で投稿を見たい人）。本人だけの設定 ----
+
+  Stream<List<Oshi>> watchOshi(String uid) => _userDoc(uid).snapshots().map(
+    (s) => [
+      for (final m in (s.data()?['oshi'] as List? ?? const []))
+        Oshi.fromMap(Map<String, dynamic>.from(m as Map)),
+    ],
+  );
+
+  Future<void> setOshi(String uid, List<Oshi> list) => _userDoc(uid).set({
+    'oshi': [for (final o in list) o.toMap()],
+  }, SetOptions(merge: true));
 }
