@@ -7,7 +7,9 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'event_editor_page.dart';
-import 'family_settings_page.dart';
+import 'planner.dart';
+import 'routine_page.dart';
+import 'streams.dart';
 import 'holidays.dart';
 import 'l10n.dart';
 import 'models.dart';
@@ -42,7 +44,14 @@ int _compareEvents(CalendarEvent a, CalendarEvent b) {
   return (a.id ?? '').compareTo(b.id ?? '');
 }
 
-/// 家族で共有するカレンダー（ログイン後のホーム画面）。
+/// カレンダーに表示する範囲。
+enum CalendarView { all, family, work }
+
+/// 予定の色。仕事の予定は仕事の色、家庭の予定は誰の予定かで色分けする。
+Color eventColor(Family family, CalendarEvent e) =>
+    e.kind == CalendarKind.work ? workColor : family.colorOf(e.owner);
+
+/// 家庭（家族で共有）と仕事（本人だけ）をまとめて表示するカレンダー。
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key, required this.user, required this.familyId});
 
@@ -61,6 +70,18 @@ class _CalendarPageState extends State<CalendarPage> {
     widget.familyId,
   );
   List<CalendarEvent> _events = const [];
+  CalendarView _view = CalendarView.all;
+
+  late final Place _place = Place(
+    familyId: widget.familyId,
+    uid: widget.user.uid,
+  );
+
+  bool _isVisible(CalendarEvent e) => switch (_view) {
+    CalendarView.all => true,
+    CalendarView.family => e.kind == CalendarKind.family,
+    CalendarView.work => e.kind == CalendarKind.work,
+  };
 
   /// 取り込んだ X の投稿（本人のものだけ）。
   late Stream<Map<String, List<XPost>>> _xStream = _xStreamFor(
@@ -105,16 +126,25 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   /// 表示月の前後 1 か月分を読み込む（月をまたぐ予定も表示するため）。
+  /// 家庭・仕事の予定と、家庭・仕事のルーティーンをまとめる。
   Stream<List<CalendarEvent>> _streamFor(DateTime month) {
-    return Repository.instance.watchEvents(
-      widget.familyId,
-      from: DateTime(month.year, month.month - 1, 1),
-      to: DateTime(month.year, month.month + 2, 1),
-    );
+    final from = DateTime(month.year, month.month - 1, 1);
+    final to = DateTime(month.year, month.month + 2, 1);
+    final repo = Repository.instance;
+    Stream<List<CalendarEvent>> routines(CalendarKind kind) => repo
+        .watchRoutines(_place, kind)
+        .map((rs) => routineOccurrences(rs, from, to));
+    return combineLatestLists([
+      repo.watchEvents(_place, CalendarKind.family, from: from, to: to),
+      repo.watchEvents(_place, CalendarKind.work, from: from, to: to),
+      routines(CalendarKind.family),
+      routines(CalendarKind.work),
+    ]);
   }
 
   List<CalendarEvent> _eventsOn(DateTime day) =>
-      _events.where((e) => e.occursOn(day)).toList()..sort(_compareEvents);
+      _events.where((e) => _isVisible(e) && e.occursOn(day)).toList()
+        ..sort(_compareEvents);
 
   void _onPageChanged(DateTime focusedDay) {
     setState(() {
@@ -128,12 +158,20 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   void _openEditor(Family family, {CalendarEvent? event, DateTime? day}) {
+    if (event != null && event.isRoutine) {
+      _showRoutineActions(family, event);
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => EventEditorPage(
           family: family,
           initialDay: day ?? _selectedDay,
           event: event,
+          // 「仕事」だけを表示しているときは、新しい予定も仕事にする
+          initialKind: _view == CalendarView.work
+              ? CalendarKind.work
+              : CalendarKind.family,
         ),
       ),
     );
@@ -152,7 +190,7 @@ class _CalendarPageState extends State<CalendarPage> {
         builder: (context, snap) {
           final dayEvents =
               (snap.data ?? const <CalendarEvent>[])
-                  .where((e) => e.occursOn(day))
+                  .where((e) => _isVisible(e) && e.occursOn(day))
                   .toList()
                 ..sort(_compareEvents);
           return ConstrainedBox(
@@ -220,7 +258,12 @@ class _CalendarPageState extends State<CalendarPage> {
                         children: [
                           if (dayEvents.isEmpty)
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                              padding: const EdgeInsets.fromLTRB(
+                                20,
+                                16,
+                                20,
+                                24,
+                              ),
                               child: Text(context.l10n.noEvents),
                             ),
                           for (final e in dayEvents)
@@ -283,11 +326,58 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  void _showFamily(Family family) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) =>
-            FamilySettingsPage(familyId: family.id, uid: widget.user.uid),
+  /// ルーティーンの予定を押したとき：その日だけ休みにするか、ルーティーンを編集する。
+  Future<void> _showRoutineActions(Family family, CalendarEvent event) async {
+    final routine = await Repository.instance.getRoutine(
+      _place,
+      event.kind,
+      event.routineId!,
+    );
+    if (routine == null || !mounted) return;
+    final day = DateTime(event.start.year, event.start.month, event.start.day);
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.repeat),
+              title: Text(routine.title),
+              subtitle: Text(context.l10n.routineLabel),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.event_busy_outlined),
+              title: Text(
+                context.l10n.skipThisDay(
+                  DateFormat.MMMEd(context.localeName).format(day),
+                ),
+              ),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                await Repository.instance.skipRoutineOn(_place, routine, day);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: Text(context.l10n.editRoutine),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => RoutineEditorPage(
+                      family: family,
+                      place: _place,
+                      routine: routine,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -330,18 +420,34 @@ class _CalendarPageState extends State<CalendarPage> {
                 ),
               ),
             ),
-          if (family != null)
-            IconButton(
-              tooltip: context.l10n.membersTooltip,
-              icon: const Icon(Icons.group_add_outlined),
-              onPressed: () => _showFamily(family),
-            ),
-          IconButton(
-            tooltip: context.l10n.logout,
-            icon: const Icon(Icons.logout),
-            onPressed: () => FirebaseAuth.instance.signOut(),
-          ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: SegmentedButton<CalendarView>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(
+                  value: CalendarView.all,
+                  label: Text(context.l10n.viewAll),
+                ),
+                ButtonSegment(
+                  value: CalendarView.family,
+                  icon: const Icon(Icons.home_outlined, size: 18),
+                  label: Text(context.l10n.family),
+                ),
+                ButtonSegment(
+                  value: CalendarView.work,
+                  icon: const Icon(Icons.work_outline, size: 18),
+                  label: Text(context.l10n.work),
+                ),
+              ],
+              selected: {_view},
+              onSelectionChanged: (s) => setState(() => _view = s.first),
+            ),
+          ),
+        ),
       ),
       floatingActionButton: family == null
           ? null
@@ -612,7 +718,7 @@ class _EventChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = family.colorOf(event.owner);
+    final color = eventColor(family, event);
     final isFirstDay = isSameDay(event.start, day);
     final nextDay = DateTime(day.year, day.month, day.day + 1);
     final isLastDay = !event.end.isAfter(nextDay);
@@ -683,7 +789,7 @@ class _EventTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = family.colorOf(event.owner);
+    final color = eventColor(family, event);
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -709,13 +815,20 @@ class _EventTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${_timeText(context)}   ${ownerName(context, family, event.owner)}',
+                    [
+                      _timeText(context),
+                      if (event.kind == CalendarKind.work)
+                        context.l10n.work
+                      else
+                        ownerName(context, family, event.owner),
+                      if (event.isRoutine) context.l10n.routineLabel,
+                    ].join('   '),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right),
+            Icon(event.isRoutine ? Icons.repeat : Icons.chevron_right),
           ],
         ),
       ),

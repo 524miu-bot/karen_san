@@ -925,6 +925,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **' – '**
   String get rangeSeparator;
+
+  /// No description provided for @customColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom color'**
+  String get customColor;
+
+  /// No description provided for @colorPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample event'**
+  String get colorPreview;
+
+  /// No description provided for @hue.
+  ///
+  /// In en, this message translates to:
+  /// **'Hue'**
+  String get hue;
+
+  /// No description provided for @brightness.
+  ///
+  /// In en, this message translates to:
+  /// **'Brightness'**
+  String get brightness;
+
+  /// No description provided for @select.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get select;
+
+  /// No description provided for @unlockReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock Karen-san'**
+  String get unlockReason;
+
+  /// No description provided for @unlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get unlock;
+
+  /// No description provided for @appLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock with Face ID / Touch ID'**
+  String get appLock;
+
+  /// No description provided for @appLockHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for Face ID, Touch ID, or your passcode when opening the app.'**
+  String get appLockHelp;
+
+  /// No description provided for @viewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get viewAll;
+
+  /// No description provided for @family.
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get family;
+
+  /// No description provided for @work.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get work;
+
+  /// No description provided for @routineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly routine'**
+  String get routineLabel;
+
+  /// No description provided for @skipThisDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip only on {date}'**
+  String skipThisDay(String date);
+
+  /// No description provided for @editRoutine.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit routine'**
+  String get editRoutine;
+
+  /// No description provided for @addRoutine.
+  ///
+  /// In en, this message translates to:
+  /// **'Add routine'**
+  String get addRoutine;
+
+  /// No description provided for @routinesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly routine'**
+  String get routinesTitle;
+
+  /// No description provided for @routinesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Add things that happen every week, like school or work hours. They appear on the calendar automatically, so you don\'t need to enter them each time.'**
+  String get routinesHelp;
+
+  /// No description provided for @skipHolidaysShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Off on holidays'**
+  String get skipHolidaysShort;
+
+  /// No description provided for @weekdaysRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one day of the week.'**
+  String get weekdaysRequired;
+
+  /// No description provided for @deleteRoutineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this routine?'**
+  String get deleteRoutineTitle;
+
+  /// No description provided for @deleteRoutineBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It will disappear from every week on the calendar.'**
+  String get deleteRoutineBody;
+
+  /// No description provided for @repeatOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat on'**
+  String get repeatOn;
+
+  /// No description provided for @weekdaysOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekdays'**
+  String get weekdaysOnly;
+
+  /// No description provided for @skipHolidays.
+  ///
+  /// In en, this message translates to:
+  /// **'Off on public holidays'**
+  String get skipHolidays;
+
+  /// No description provided for @skipHolidaysHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Not shown on Japanese public holidays and substitute holidays (good for school).'**
+  String get skipHolidaysHelp;
+
+  /// No description provided for @skippedDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped days (tap × to restore)'**
+  String get skippedDays;
+
+  /// No description provided for @workOnlyYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Work event — only you can see it'**
+  String get workOnlyYou;
+
+  /// No description provided for @todoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This week\'s to-dos'**
+  String get todoTitle;
+
+  /// No description provided for @todoHintWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Work to-do for this week'**
+  String get todoHintWork;
+
+  /// No description provided for @todoHintFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Family to-do for this week'**
+  String get todoHintFamily;
+
+  /// No description provided for @todoEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to do yet. Add what you need to get done this week.'**
+  String get todoEmpty;
+
+  /// No description provided for @todoCarried.
+  ///
+  /// In en, this message translates to:
+  /// **'From earlier weeks'**
+  String get todoCarried;
+
+  /// No description provided for @todoThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get todoThisWeek;
+
+  /// No description provided for @todoFromWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'From the week of {week}'**
+  String todoFromWeek(String week);
+
+  /// No description provided for @tabCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get tabCalendar;
+
+  /// No description provided for @tabRoutine.
+  ///
+  /// In en, this message translates to:
+  /// **'Routine'**
+  String get tabRoutine;
+
+  /// No description provided for @tabTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'To-do'**
+  String get tabTodo;
+
+  /// No description provided for @tabSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get tabSettings;
 }
 
 class _AppLocalizationsDelegate

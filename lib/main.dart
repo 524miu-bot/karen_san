@@ -3,7 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-import 'calendar_page.dart';
+import 'app_lock.dart';
+import 'home_shell.dart';
 import 'family_setup_page.dart';
 import 'firebase_options.dart';
 import 'l10n.dart';
@@ -39,7 +40,8 @@ class KarenSanApp extends StatelessWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       localeListResolutionCallback: (locales, _) => resolveAppLocale(locales),
-      home: const AuthGate(),
+      // ロックはアプリ版でオンにした人だけ（Web 版では何もしない）
+      home: const AppLockGate(child: AuthGate()),
     );
   }
 }
@@ -80,7 +82,7 @@ class AuthGate extends StatelessWidget {
             final familyId = familySnap.data;
             return familyId == null
                 ? FamilySetupPage(user: user)
-                : CalendarPage(
+                : HomeShell(
                     key: ValueKey(familyId),
                     user: user,
                     familyId: familyId,

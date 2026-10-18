@@ -469,4 +469,130 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rangeSeparator => ' – ';
+
+  @override
+  String get customColor => 'Custom color';
+
+  @override
+  String get colorPreview => 'Sample event';
+
+  @override
+  String get hue => 'Hue';
+
+  @override
+  String get brightness => 'Brightness';
+
+  @override
+  String get select => 'Select';
+
+  @override
+  String get unlockReason => 'Unlock Karen-san';
+
+  @override
+  String get unlock => 'Unlock';
+
+  @override
+  String get appLock => 'Lock with Face ID / Touch ID';
+
+  @override
+  String get appLockHelp =>
+      'Ask for Face ID, Touch ID, or your passcode when opening the app.';
+
+  @override
+  String get viewAll => 'All';
+
+  @override
+  String get family => 'Family';
+
+  @override
+  String get work => 'Work';
+
+  @override
+  String get routineLabel => 'Weekly routine';
+
+  @override
+  String skipThisDay(String date) {
+    return 'Skip only on $date';
+  }
+
+  @override
+  String get editRoutine => 'Edit routine';
+
+  @override
+  String get addRoutine => 'Add routine';
+
+  @override
+  String get routinesTitle => 'Weekly routine';
+
+  @override
+  String get routinesHelp =>
+      'Add things that happen every week, like school or work hours. They appear on the calendar automatically, so you don\'t need to enter them each time.';
+
+  @override
+  String get skipHolidaysShort => 'Off on holidays';
+
+  @override
+  String get weekdaysRequired => 'Choose at least one day of the week.';
+
+  @override
+  String get deleteRoutineTitle => 'Delete this routine?';
+
+  @override
+  String get deleteRoutineBody =>
+      'It will disappear from every week on the calendar.';
+
+  @override
+  String get repeatOn => 'Repeat on';
+
+  @override
+  String get weekdaysOnly => 'Weekdays';
+
+  @override
+  String get skipHolidays => 'Off on public holidays';
+
+  @override
+  String get skipHolidaysHelp =>
+      'Not shown on Japanese public holidays and substitute holidays (good for school).';
+
+  @override
+  String get skippedDays => 'Skipped days (tap × to restore)';
+
+  @override
+  String get workOnlyYou => 'Work event — only you can see it';
+
+  @override
+  String get todoTitle => 'This week\'s to-dos';
+
+  @override
+  String get todoHintWork => 'Work to-do for this week';
+
+  @override
+  String get todoHintFamily => 'Family to-do for this week';
+
+  @override
+  String get todoEmpty =>
+      'Nothing to do yet. Add what you need to get done this week.';
+
+  @override
+  String get todoCarried => 'From earlier weeks';
+
+  @override
+  String get todoThisWeek => 'This week';
+
+  @override
+  String todoFromWeek(String week) {
+    return 'From the week of $week';
+  }
+
+  @override
+  String get tabCalendar => 'Calendar';
+
+  @override
+  String get tabRoutine => 'Routine';
+
+  @override
+  String get tabTodo => 'To-do';
+
+  @override
+  String get tabSettings => 'Settings';
 }

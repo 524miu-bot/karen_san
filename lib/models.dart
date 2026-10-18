@@ -17,6 +17,9 @@ const memberPalette = <Color>[
 /// 「みんなの予定」の色。
 const everyoneColor = Color(0xFF546E7A);
 
+/// 仕事の予定の色（本人だけが見る予定なので、家族の色とは別にする）。
+const workColor = Color(0xFF283593);
+
 /// アプリにログインしない予定者（子どもなど）。グループのメンバーなら誰でも追加・編集できる。
 class Person {
   Person({required this.id, required this.name, this.color, this.order = 0});
@@ -121,6 +124,10 @@ class Family {
   }
 }
 
+/// 予定がどちらのカレンダーのものか。
+/// 家庭はグループで共有し、仕事は本人だけが見られる。
+enum CalendarKind { family, work }
+
 /// カレンダーの予定。
 class CalendarEvent {
   CalendarEvent({
@@ -133,6 +140,8 @@ class CalendarEvent {
     this.createdBy = '',
     this.createdByName = '',
     this.ownerId = '',
+    this.kind = CalendarKind.family,
+    this.routineId,
   });
 
   /// [ownerId] がこの値なら「みんなの予定」。
@@ -150,12 +159,24 @@ class CalendarEvent {
   /// 誰の予定か（メンバーの uid か [everyone]）。
   final String ownerId;
 
+  /// 家庭の予定か仕事の予定か（保存場所で決まる。保存はしない）。
+  final CalendarKind kind;
+
+  /// ルーティーンから自動で作った予定なら、そのルーティーンの ID（保存はしない）。
+  final String? routineId;
+
+  bool get isRoutine => routineId != null;
+
   /// 誰の予定か。古い予定（[ownerId] なし）は登録した人の予定とみなす。
   String get owner => ownerId.isNotEmpty ? ownerId : createdBy;
 
-  factory CalendarEvent.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory CalendarEvent.fromDoc(
+    DocumentSnapshot<Map<String, dynamic>> doc, {
+    CalendarKind kind = CalendarKind.family,
+  }) {
     final d = doc.data()!;
     return CalendarEvent(
+      kind: kind,
       id: doc.id,
       title: d['title'] as String? ?? '',
       start: (d['start'] as Timestamp).toDate(),

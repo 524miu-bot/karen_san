@@ -8,7 +8,7 @@ void main() {
   testWidgets('ログイン画面に Google とメールのログイン手段が表示される', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        locale: const Locale('ja'),
+        locale: Locale('ja'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: LoginPage(),

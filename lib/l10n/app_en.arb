@@ -248,5 +248,58 @@
   "oshiHandle": "X username",
   "oshiHandleHint": "@username or URL",
   "oshiDisplayName": "Display name (optional)",
-  "rangeSeparator": " – "
+  "rangeSeparator": " – ",
+  "customColor": "Custom color",
+  "colorPreview": "Sample event",
+  "hue": "Hue",
+  "brightness": "Brightness",
+  "select": "Select",
+  "unlockReason": "Unlock Karen-san",
+  "unlock": "Unlock",
+  "appLock": "Lock with Face ID / Touch ID",
+  "appLockHelp": "Ask for Face ID, Touch ID, or your passcode when opening the app.",
+  "viewAll": "All",
+  "family": "Family",
+  "work": "Work",
+  "routineLabel": "Weekly routine",
+  "skipThisDay": "Skip only on {date}",
+  "@skipThisDay": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "editRoutine": "Edit routine",
+  "addRoutine": "Add routine",
+  "routinesTitle": "Weekly routine",
+  "routinesHelp": "Add things that happen every week, like school or work hours. They appear on the calendar automatically, so you don't need to enter them each time.",
+  "skipHolidaysShort": "Off on holidays",
+  "weekdaysRequired": "Choose at least one day of the week.",
+  "deleteRoutineTitle": "Delete this routine?",
+  "deleteRoutineBody": "It will disappear from every week on the calendar.",
+  "repeatOn": "Repeat on",
+  "weekdaysOnly": "Weekdays",
+  "skipHolidays": "Off on public holidays",
+  "skipHolidaysHelp": "Not shown on Japanese public holidays and substitute holidays (good for school).",
+  "skippedDays": "Skipped days (tap × to restore)",
+  "workOnlyYou": "Work event — only you can see it",
+  "todoTitle": "This week's to-dos",
+  "todoHintWork": "Work to-do for this week",
+  "todoHintFamily": "Family to-do for this week",
+  "todoEmpty": "Nothing to do yet. Add what you need to get done this week.",
+  "todoCarried": "From earlier weeks",
+  "todoThisWeek": "This week",
+  "todoFromWeek": "From the week of {week}",
+  "@todoFromWeek": {
+    "placeholders": {
+      "week": {
+        "type": "String"
+      }
+    }
+  },
+  "tabCalendar": "Calendar",
+  "tabRoutine": "Routine",
+  "tabTodo": "To-do",
+  "tabSettings": "Settings"
 }

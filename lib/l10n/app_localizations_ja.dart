@@ -459,4 +459,126 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get rangeSeparator => '〜';
+
+  @override
+  String get customColor => '好きな色';
+
+  @override
+  String get colorPreview => '予定の見え方';
+
+  @override
+  String get hue => '色合い';
+
+  @override
+  String get brightness => '明るさ';
+
+  @override
+  String get select => '決定';
+
+  @override
+  String get unlockReason => 'カレンさんのロックを解除';
+
+  @override
+  String get unlock => 'ロックを解除';
+
+  @override
+  String get appLock => 'Face ID / Touch ID でロック';
+
+  @override
+  String get appLockHelp => 'アプリを開くときに、Face ID・Touch ID または端末のパスコードで本人確認をします。';
+
+  @override
+  String get viewAll => 'すべて';
+
+  @override
+  String get family => '家庭';
+
+  @override
+  String get work => '仕事';
+
+  @override
+  String get routineLabel => '毎週のルーティーン';
+
+  @override
+  String skipThisDay(String date) {
+    return '$date だけ休みにする';
+  }
+
+  @override
+  String get editRoutine => 'ルーティーンを編集';
+
+  @override
+  String get addRoutine => 'ルーティーンを追加';
+
+  @override
+  String get routinesTitle => '1 週間のルーティーン';
+
+  @override
+  String get routinesHelp =>
+      '学校や仕事の時間など、毎週決まっている予定を登録すると、カレンダーに自動で表示されます。毎回入力しなくて大丈夫です。';
+
+  @override
+  String get skipHolidaysShort => '祝日はお休み';
+
+  @override
+  String get weekdaysRequired => '曜日を 1 つ以上選んでください。';
+
+  @override
+  String get deleteRoutineTitle => 'このルーティーンを削除しますか？';
+
+  @override
+  String get deleteRoutineBody => 'カレンダーの毎週の表示から消えます。';
+
+  @override
+  String get repeatOn => '繰り返す曜日';
+
+  @override
+  String get weekdaysOnly => '平日';
+
+  @override
+  String get skipHolidays => '祝日はお休み';
+
+  @override
+  String get skipHolidaysHelp => '祝日・振替休日には表示しません（学校の予定などに）。';
+
+  @override
+  String get skippedDays => '休みにした日（× で元に戻す）';
+
+  @override
+  String get workOnlyYou => '仕事の予定（あなただけが見られます）';
+
+  @override
+  String get todoTitle => '今週の TODO';
+
+  @override
+  String get todoHintWork => '今週中にやる仕事';
+
+  @override
+  String get todoHintFamily => '今週中にやる家のこと';
+
+  @override
+  String get todoEmpty => 'まだありません。今週中にやることを追加しましょう。';
+
+  @override
+  String get todoCarried => '先週から';
+
+  @override
+  String get todoThisWeek => '今週';
+
+  @override
+  String todoFromWeek(String week) {
+    return '$week の週から';
+  }
+
+  @override
+  String get tabCalendar => 'カレンダー';
+
+  @override
+  String get tabRoutine => 'ルーティーン';
+
+  @override
+  String get tabTodo => 'TODO';
+
+  @override
+  String get tabSettings => '設定';
 }

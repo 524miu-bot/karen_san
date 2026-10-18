@@ -1,7 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'account_deletion.dart';
+import 'app_lock.dart';
+import 'color_picker.dart';
 import 'l10n.dart';
 import 'models.dart';
 import 'repository.dart';
@@ -101,40 +104,6 @@ class _NameColorDialogState extends State<_NameColorDialog> {
           onPressed: _submit,
           child: Text(widget.okLabel ?? context.l10n.save),
         ),
-      ],
-    );
-  }
-}
-
-/// 色を選ぶ丸いボタンの並び。
-class ColorChoices extends StatelessWidget {
-  const ColorChoices({
-    super.key,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final Color selected;
-  final ValueChanged<Color> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final c in memberPalette)
-          InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () => onSelected(c),
-            child: CircleAvatar(
-              radius: 16,
-              backgroundColor: c,
-              child: c.toARGB32() == selected.toARGB32()
-                  ? const Icon(Icons.check, color: Colors.white, size: 18)
-                  : null,
-            ),
-          ),
       ],
     );
   }
@@ -347,6 +316,12 @@ class FamilySettingsPage extends StatelessWidget {
                         ),
                         const Divider(),
                         _header(context, context.l10n.accountSection),
+                        const AppLockSwitch(),
+                        ListTile(
+                          leading: const Icon(Icons.logout),
+                          title: Text(context.l10n.logout),
+                          onTap: () => FirebaseAuth.instance.signOut(),
+                        ),
                         ListTile(
                           leading: Icon(
                             Icons.person_remove_outlined,

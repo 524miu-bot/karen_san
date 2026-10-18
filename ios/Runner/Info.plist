@@ -92,5 +92,8 @@
 		<string>en</string>
 		<string>ja</string>
 	</array>
+	<!-- Face ID でのロック（設定でオンにした人だけ使う） -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>カレンさんのロックを解除するために Face ID を使います。</string>
 </dict>
 </plist>

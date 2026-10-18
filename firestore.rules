@@ -39,9 +39,10 @@ service cloud.firestore {
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
 
-      // 取り込んだ X の投稿は本人だけが読み書きできる
-      match /xdays/{day} {
-        allow read, write: if signedIn() && request.auth.uid == uid;
+      // 本人だけのデータ：取り込んだ X の投稿（xdays）、仕事の予定・ルーティーン・TODO（work_…）
+      match /{collection}/{docId} {
+        allow read, write: if signedIn() && request.auth.uid == uid
+          && collection in ['xdays', 'work_events', 'work_routines', 'work_todos'];
       }
     }
 
@@ -93,6 +94,30 @@ service cloud.firestore {
           && request.resource.data.createdBy == request.auth.uid;
         allow update: if isMember(familyId) && validEvent()
           && request.resource.data.createdBy == resource.data.createdBy;
+      }
+
+      // 1 週間のルーティーン（グループで共有）
+      match /routines/{routineId} {
+        allow read, delete: if isMember(familyId);
+        allow create, update: if isMember(familyId)
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 100
+          && request.resource.data.weekdays is list
+          && request.resource.data.weekdays.size() <= 7
+          && request.resource.data.skipDates is list
+          && request.resource.data.skipDates.size() <= 500;
+      }
+
+      // 今週の TODO（グループで共有）
+      match /todos/{todoId} {
+        allow read, delete: if isMember(familyId);
+        allow create, update: if isMember(familyId)
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 200
+          && request.resource.data.done is bool
+          && request.resource.data.weekKey is string;
       }
     }
   }

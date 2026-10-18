@@ -6,7 +6,16 @@ import 'package:flutter/painting.dart';
 
 import 'models.dart';
 import 'oshi.dart';
+import 'planner.dart';
+import 'streams.dart';
 import 'x_archive/x_archive.dart';
+
+/// 予定などを保存する場所を決める情報（所属グループと本人）。
+class Place {
+  const Place({required this.familyId, required this.uid});
+  final String familyId;
+  final String uid;
+}
 
 /// Firestore の読み書きをまとめたもの。
 ///
@@ -27,9 +36,6 @@ class Repository {
 
   DocumentReference<Map<String, dynamic>> _familyDoc(String familyId) =>
       _db.collection('families').doc(familyId);
-
-  CollectionReference<Map<String, dynamic>> _events(String familyId) =>
-      _familyDoc(familyId).collection('events');
 
   /// ログイン中のユーザーが所属する家族 ID（未所属なら null）。
   Stream<String?> watchFamilyId(String uid) =>
@@ -129,30 +135,112 @@ class Repository {
   Future<void> removePerson(String familyId, String personId) =>
       _familyDoc(familyId).update({'people.$personId': FieldValue.delete()});
 
+  /// 予定・ルーティーン・TODO の保存場所。
+  /// 家庭はグループ（families/{familyId}/…）、仕事は本人だけ（users/{uid}/work_…）。
+  CollectionReference<Map<String, dynamic>> _planner(
+    Place place,
+    CalendarKind kind,
+    String name,
+  ) => kind == CalendarKind.family
+      ? _familyDoc(place.familyId).collection(name)
+      : _userDoc(place.uid).collection('work_$name');
+
   /// [from] 以降・[to] より前に始まる予定。
   Stream<List<CalendarEvent>> watchEvents(
-    String familyId, {
+    Place place,
+    CalendarKind kind, {
     required DateTime from,
     required DateTime to,
   }) {
-    return _events(familyId)
+    return _planner(place, kind, 'events')
         .where('start', isGreaterThanOrEqualTo: Timestamp.fromDate(from))
         .where('start', isLessThan: Timestamp.fromDate(to))
         .orderBy('start')
         .snapshots()
-        .map((q) => q.docs.map(CalendarEvent.fromDoc).toList());
+        .map(
+          (q) => [for (final d in q.docs) CalendarEvent.fromDoc(d, kind: kind)],
+        );
   }
 
-  Future<void> saveEvent(String familyId, CalendarEvent event) {
+  Future<void> saveEvent(Place place, CalendarEvent event) {
+    final col = _planner(place, event.kind, 'events');
     if (event.id == null) {
-      return _events(familyId)
-          .add({...event.toMap(), 'createdAt': FieldValue.serverTimestamp()});
+      return col.add({
+        ...event.toMap(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
     }
-    return _events(familyId).doc(event.id).update(event.toMap());
+    return col.doc(event.id).update(event.toMap());
   }
 
-  Future<void> deleteEvent(String familyId, String eventId) =>
-      _events(familyId).doc(eventId).delete();
+  Future<void> deleteEvent(Place place, CalendarEvent event) =>
+      _planner(place, event.kind, 'events').doc(event.id).delete();
+
+  // ---- 1 週間のルーティーン ----
+
+  Stream<List<Routine>> watchRoutines(Place place, CalendarKind kind) =>
+      _planner(place, kind, 'routines').snapshots().map(
+        (q) => [
+          for (final d in q.docs) Routine.fromMap(d.id, d.data(), kind: kind),
+        ]..sort((a, b) => a.startMinutes.compareTo(b.startMinutes)),
+      );
+
+  Future<Routine?> getRoutine(Place place, CalendarKind kind, String id) async {
+    final doc = await _planner(place, kind, 'routines').doc(id).get();
+    final data = doc.data();
+    return data == null ? null : Routine.fromMap(doc.id, data, kind: kind);
+  }
+
+  Future<void> saveRoutine(Place place, Routine routine) {
+    final col = _planner(place, routine.kind, 'routines');
+    return routine.id == null
+        ? col.add(routine.toMap())
+        : col.doc(routine.id).set(routine.toMap());
+  }
+
+  Future<void> deleteRoutine(Place place, Routine routine) =>
+      _planner(place, routine.kind, 'routines').doc(routine.id).delete();
+
+  /// その日だけルーティーンをお休みにする。
+  Future<void> skipRoutineOn(Place place, Routine routine, DateTime day) =>
+      _planner(place, routine.kind, 'routines').doc(routine.id).update({
+        'skipDates': FieldValue.arrayUnion([dateKey(day)]),
+      });
+
+  // ---- 今週の TODO ----
+
+  /// [weekKey] の週の TODO と、終わっていない TODO（持ち越し用）。
+  Stream<List<Todo>> watchTodos(
+    Place place,
+    CalendarKind kind,
+    String weekKey,
+  ) {
+    final col = _planner(place, kind, 'todos');
+    List<Todo> parse(QuerySnapshot<Map<String, dynamic>> q) => [
+      for (final d in q.docs) Todo.fromMap(d.id, d.data(), kind: kind),
+    ];
+    return combineLatestLists([
+      col.where('weekKey', isEqualTo: weekKey).snapshots().map(parse),
+      col.where('done', isEqualTo: false).snapshots().map(parse),
+    ]);
+  }
+
+  Future<void> saveTodo(Place place, Todo todo) {
+    final col = _planner(place, todo.kind, 'todos');
+    return todo.id == null
+        ? col.add({...todo.toMap(), 'createdAt': FieldValue.serverTimestamp()})
+        : col.doc(todo.id).update(todo.toMap());
+  }
+
+  Future<void> setTodoDone(Place place, Todo todo, bool done) =>
+      _planner(place, todo.kind, 'todos').doc(todo.id).update({
+        'done': done,
+        // 持ち越した TODO を終えたら、終えた週の TODO として残す
+        if (done) 'weekKey': weekKeyOf(DateTime.now()),
+      });
+
+  Future<void> deleteTodo(Place place, Todo todo) =>
+      _planner(place, todo.kind, 'todos').doc(todo.id).delete();
 
   // ---- X の投稿（本人だけが見られる日記） ----
   // users/{uid}/xdays/{yyyy-MM-dd} … { date, posts: { 投稿ID: { t, at, k, m } } }
