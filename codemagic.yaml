@@ -6,6 +6,27 @@
 #      名前を「karen-san ASC」にする（下の integrations と同じ名前）
 #   2. このリポジトリを Codemagic のアプリとして追加する
 workflows:
+  # Apple Developer Program に登録する前でも使える、ビルドできるかの確認だけ（署名なし・配布なし）
+  ios-build-check:
+    name: iPhone ビルド確認（署名なし）
+    max_build_duration: 45
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.47.7
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events: []
+    scripts:
+      - name: パッケージを取得
+        script: flutter pub get
+      - name: テスト
+        script: flutter test
+      - name: iPhone アプリをビルド（署名なし）
+        script: flutter build ios --release --no-codesign
+    artifacts:
+      - /tmp/xcodebuild_logs/*.log
+
   ios-testflight:
     name: iPhone（TestFlight）
     max_build_duration: 60
