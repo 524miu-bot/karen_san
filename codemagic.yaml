@@ -63,4 +63,6 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # 内部テスト（自分・家族）は、アップロードして Apple の処理が終われば使える。
+        # 外部テスト（審査が必要）に出すときだけ true にする。
+        submit_to_testflight: false
