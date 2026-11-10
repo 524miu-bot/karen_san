@@ -367,5 +367,53 @@
   "locationHint": "Meeting place, address, or a name to search on the map",
   "openInMaps": "Open in maps",
   "googleMaps": "Google Maps",
-  "appleMaps": "Apple Maps"
+  "appleMaps": "Apple Maps",
+  "bulkTitle": "Add events in bulk",
+  "bulkHelp": "Paste events, one per line, in the format below. Check them, choose the category and whose events they are, then add them all at once.",
+  "bulkHint": "2026-11-01 09:00-12:00 | Practice | Gym | Notes\n2026-11-14 all day | Tournament | School",
+  "bulkRead": "Check events",
+  "bulkNothing": "No events found.",
+  "bulkBadLines": "Could not read line {lines}. Check the date and time format.",
+  "@bulkBadLines": {
+    "placeholders": {
+      "lines": {
+        "type": "String"
+      }
+    }
+  },
+  "bulkPreview": "{count} events found. Uncheck any you don't want.",
+  "@bulkPreview": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bulkSave": "Add {count} events",
+  "@bulkSave": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bulkSaved": "Added {count} events to the calendar.",
+  "@bulkSaved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bulkSaveFailed": "Added {count} events, then stopped: {error}",
+  "@bulkSaveFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  }
 }

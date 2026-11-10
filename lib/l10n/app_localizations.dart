@@ -1411,6 +1411,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apple Maps'**
   String get appleMaps;
+
+  /// No description provided for @bulkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add events in bulk'**
+  String get bulkTitle;
+
+  /// No description provided for @bulkHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste events, one per line, in the format below. Check them, choose the category and whose events they are, then add them all at once.'**
+  String get bulkHelp;
+
+  /// No description provided for @bulkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'2026-11-01 09:00-12:00 | Practice | Gym | Notes\n2026-11-14 all day | Tournament | School'**
+  String get bulkHint;
+
+  /// No description provided for @bulkRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Check events'**
+  String get bulkRead;
+
+  /// No description provided for @bulkNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No events found.'**
+  String get bulkNothing;
+
+  /// No description provided for @bulkBadLines.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read line {lines}. Check the date and time format.'**
+  String bulkBadLines(String lines);
+
+  /// No description provided for @bulkPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} events found. Uncheck any you don\'t want.'**
+  String bulkPreview(int count);
+
+  /// No description provided for @bulkSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {count} events'**
+  String bulkSave(int count);
+
+  /// No description provided for @bulkSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {count} events to the calendar.'**
+  String bulkSaved(int count);
+
+  /// No description provided for @bulkSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {count} events, then stopped: {error}'**
+  String bulkSaveFailed(int count, String error);
 }
 
 class _AppLocalizationsDelegate

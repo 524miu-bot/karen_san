@@ -734,4 +734,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appleMaps => 'Apple Maps';
+
+  @override
+  String get bulkTitle => 'Add events in bulk';
+
+  @override
+  String get bulkHelp =>
+      'Paste events, one per line, in the format below. Check them, choose the category and whose events they are, then add them all at once.';
+
+  @override
+  String get bulkHint =>
+      '2026-11-01 09:00-12:00 | Practice | Gym | Notes\n2026-11-14 all day | Tournament | School';
+
+  @override
+  String get bulkRead => 'Check events';
+
+  @override
+  String get bulkNothing => 'No events found.';
+
+  @override
+  String bulkBadLines(String lines) {
+    return 'Could not read line $lines. Check the date and time format.';
+  }
+
+  @override
+  String bulkPreview(int count) {
+    return '$count events found. Uncheck any you don\'t want.';
+  }
+
+  @override
+  String bulkSave(int count) {
+    return 'Add $count events';
+  }
+
+  @override
+  String bulkSaved(int count) {
+    return 'Added $count events to the calendar.';
+  }
+
+  @override
+  String bulkSaveFailed(int count, String error) {
+    return 'Added $count events, then stopped: $error';
+  }
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'bulk_import.dart';
 import 'calendar_settings_page.dart';
 import 'categories.dart';
 import 'event_editor_page.dart';
@@ -494,6 +495,16 @@ class _CalendarPageState extends State<CalendarPage> {
       appBar: AppBar(
         title: Text(family?.name ?? context.l10n.appTitle),
         actions: [
+          if (family != null)
+            IconButton(
+              tooltip: context.l10n.bulkTitle,
+              icon: const Icon(Icons.playlist_add),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => BulkImportPage(family: family, place: _place),
+                ),
+              ),
+            ),
           if (_xPosts.isNotEmpty)
             IconButton(
               tooltip: _showX

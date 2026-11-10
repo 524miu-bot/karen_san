@@ -218,5 +218,15 @@
   "locationHint": "集合場所・住所・地図で探せる名前",
   "openInMaps": "地図で開く",
   "googleMaps": "Google マップ",
-  "appleMaps": "Apple のマップ"
+  "appleMaps": "Apple のマップ",
+  "bulkTitle": "まとめて追加",
+  "bulkHelp": "下の形で、1 行に 1 件ずつ予定を貼り付けてください。内容を確認して、種類と「誰の予定か」を選んでから、まとめて登録します。",
+  "bulkHint": "2026-11-01 09:00-12:00 | 練習 | 大谷小体育館 | メモ\n2026-11-14 終日 | 緑区大会 | 大谷小",
+  "bulkRead": "内容を確認する",
+  "bulkNothing": "予定が見つかりませんでした。",
+  "bulkBadLines": "{lines} 行目が読めませんでした。日付と時間の書き方を確認してください。",
+  "bulkPreview": "{count} 件の予定があります。登録しないものはチェックを外してください。",
+  "bulkSave": "{count} 件を登録する",
+  "bulkSaved": "{count} 件の予定をカレンダーに登録しました。",
+  "bulkSaveFailed": "{count} 件登録したところで止まりました：{error}"
 }

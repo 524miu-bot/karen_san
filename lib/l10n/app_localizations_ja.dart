@@ -714,4 +714,46 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get appleMaps => 'Apple のマップ';
+
+  @override
+  String get bulkTitle => 'まとめて追加';
+
+  @override
+  String get bulkHelp =>
+      '下の形で、1 行に 1 件ずつ予定を貼り付けてください。内容を確認して、種類と「誰の予定か」を選んでから、まとめて登録します。';
+
+  @override
+  String get bulkHint =>
+      '2026-11-01 09:00-12:00 | 練習 | 大谷小体育館 | メモ\n2026-11-14 終日 | 緑区大会 | 大谷小';
+
+  @override
+  String get bulkRead => '内容を確認する';
+
+  @override
+  String get bulkNothing => '予定が見つかりませんでした。';
+
+  @override
+  String bulkBadLines(String lines) {
+    return '$lines 行目が読めませんでした。日付と時間の書き方を確認してください。';
+  }
+
+  @override
+  String bulkPreview(int count) {
+    return '$count 件の予定があります。登録しないものはチェックを外してください。';
+  }
+
+  @override
+  String bulkSave(int count) {
+    return '$count 件を登録する';
+  }
+
+  @override
+  String bulkSaved(int count) {
+    return '$count 件の予定をカレンダーに登録しました。';
+  }
+
+  @override
+  String bulkSaveFailed(int count, String error) {
+    return '$count 件登録したところで止まりました：$error';
+  }
 }
