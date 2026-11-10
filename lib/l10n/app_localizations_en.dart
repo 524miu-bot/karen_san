@@ -612,7 +612,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryName => 'Category name';
 
   @override
-  String get categoryNameHint => 'e.g. Basketball, Karate';
+  String get categoryNameHint =>
+      'Any name you like (e.g. Club, Cram school, Fandom)';
 
   @override
   String get categoryShared => 'Shared with family';
@@ -677,4 +678,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get categoryLabel => 'Category';
+
+  @override
+  String get addCalendarShort => 'Add';
+
+  @override
+  String get addCalendarHelp => 'Add a calendar with any name you like';
 }

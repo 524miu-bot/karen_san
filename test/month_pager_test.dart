@@ -116,4 +116,25 @@ void main() {
     expect(find.text('view バスケ＋空手'), findsOneWidget);
     expect(isSelected('バスケ＋空手'), isTrue);
   });
+
+  testWidgets('ボタンの並びの最後に「＋ 追加」があり、押すと追加の処理を呼ぶ', (tester) async {
+    var added = 0;
+    await tester.pumpWidget(
+      _app(
+        SizedBox(
+          width: 400,
+          child: ViewChips(
+            views: const [CalendarViewDef(id: 'all', name: 'すべて')],
+            selected: 0,
+            onSelected: (_) {},
+            onEdit: () {},
+            onAdd: () => added++,
+          ),
+        ),
+      ),
+    );
+    expect(find.widgetWithText(ActionChip, '追加'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ActionChip, '追加'));
+    expect(added, 1);
+  });
 }

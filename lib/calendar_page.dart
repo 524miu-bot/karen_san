@@ -525,6 +525,31 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
+  /// 「＋」：好きな名前の種類を作り、その種類だけを出すカレンダーも一緒に作って切り替える。
+  Future<void> _quickAddCalendar(List<CalendarViewDef> views) async {
+    final c = await editCategory(context, _place);
+    if (c == null || !mounted) return;
+    final view = CalendarViewDef(
+      id: Repository.newViewId(),
+      name: c.name,
+      categoryIds: {c.id},
+    );
+    await Repository.instance.saveViews(widget.user.uid, [
+      for (final v in views)
+        if (!v.isAll) v,
+      view,
+    ]);
+    // 新しいカレンダー（いちばん右）が表示に加わってから切り替える
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_viewPager.hasClients) return;
+      _viewPager.animateToPage(
+        views.length,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
   Widget _buildCalendar(Family family) {
     final views = _views(context);
     final categories = _categories(context, family);
@@ -556,6 +581,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         ),
                       ),
                     ),
+                    onAdd: () => _quickAddCalendar(views),
                   ),
                   if (snap.hasError)
                     Padding(
@@ -666,16 +692,21 @@ class _CalendarPageState extends State<CalendarPage> {
 /// 表示カレンダーの切り替えボタンの並び（左右スワイプと連動）と、編集ボタン。
 class ViewChips extends StatelessWidget {
   const ViewChips({
+    super.key,
     required this.views,
     required this.selected,
     required this.onSelected,
     required this.onEdit,
+    this.onAdd,
   });
 
   final List<CalendarViewDef> views;
   final int selected;
   final ValueChanged<int> onSelected;
   final VoidCallback onEdit;
+
+  /// 「＋」：好きな名前のカレンダーをすぐ増やす。
+  final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -687,14 +718,21 @@ class ViewChips extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              itemCount: views.length,
+              itemCount: views.length + (onAdd == null ? 0 : 1),
               separatorBuilder: (_, _) => const SizedBox(width: 6),
-              itemBuilder: (context, i) => ChoiceChip(
-                label: Text(views[i].name),
-                selected: i == selected,
-                showCheckmark: false,
-                onSelected: (_) => onSelected(i),
-              ),
+              itemBuilder: (context, i) => i == views.length
+                  ? ActionChip(
+                      avatar: const Icon(Icons.add, size: 18),
+                      label: Text(context.l10n.addCalendarShort),
+                      tooltip: context.l10n.addCalendarHelp,
+                      onPressed: onAdd,
+                    )
+                  : ChoiceChip(
+                      label: Text(views[i].name),
+                      selected: i == selected,
+                      showCheckmark: false,
+                      onSelected: (_) => onSelected(i),
+                    ),
             ),
           ),
           IconButton(

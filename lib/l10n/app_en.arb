@@ -307,7 +307,7 @@
   "addCategory": "Add category",
   "editCategory": "Edit category",
   "categoryName": "Category name",
-  "categoryNameHint": "e.g. Basketball, Karate",
+  "categoryNameHint": "Any name you like (e.g. Club, Cram school, Fandom)",
   "categoryShared": "Shared with family",
   "categoryPrivate": "Only me",
   "categorySharedHelp": "Everyone in the group can see these events (good for kids' activities).",
@@ -333,5 +333,7 @@
   "viewNeedsCategory": "Choose at least one category.",
   "viewPickCategories": "Categories to show in this calendar",
   "viewName": "Calendar name",
-  "categoryLabel": "Category"
+  "categoryLabel": "Category",
+  "addCalendarShort": "Add",
+  "addCalendarHelp": "Add a calendar with any name you like"
 }

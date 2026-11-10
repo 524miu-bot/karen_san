@@ -598,7 +598,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get categoryName => '種類の名前';
 
   @override
-  String get categoryNameHint => '例：バスケ、空手、塾';
+  String get categoryNameHint => '好きな名前（例：部活、塾、推し活）';
 
   @override
   String get categoryShared => '家族と共有';
@@ -659,4 +659,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get categoryLabel => '種類';
+
+  @override
+  String get addCalendarShort => '追加';
+
+  @override
+  String get addCalendarHelp => '好きな名前のカレンダーを追加';
 }

@@ -182,7 +182,7 @@
   "addCategory": "種類を追加",
   "editCategory": "種類を編集",
   "categoryName": "種類の名前",
-  "categoryNameHint": "例：バスケ、空手、塾",
+  "categoryNameHint": "好きな名前（例：部活、塾、推し活）",
   "categoryShared": "家族と共有",
   "categoryPrivate": "自分だけ",
   "categorySharedHelp": "グループの全員がこの種類の予定を見られます（子どもの習い事などに）。",
@@ -201,5 +201,7 @@
   "viewNeedsCategory": "種類を 1 つ以上選んでください。",
   "viewPickCategories": "このカレンダーに出す種類",
   "viewName": "カレンダーの名前",
-  "categoryLabel": "種類"
+  "categoryLabel": "種類",
+  "addCalendarShort": "追加",
+  "addCalendarHelp": "好きな名前のカレンダーを追加"
 }

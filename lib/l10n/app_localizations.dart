@@ -1193,7 +1193,7 @@ abstract class AppLocalizations {
   /// No description provided for @categoryNameHint.
   ///
   /// In en, this message translates to:
-  /// **'e.g. Basketball, Karate'**
+  /// **'Any name you like (e.g. Club, Cram school, Fandom)'**
   String get categoryNameHint;
 
   /// No description provided for @categoryShared.
@@ -1309,6 +1309,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Category'**
   String get categoryLabel;
+
+  /// No description provided for @addCalendarShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addCalendarShort;
+
+  /// No description provided for @addCalendarHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a calendar with any name you like'**
+  String get addCalendarHelp;
 }
 
 class _AppLocalizationsDelegate
