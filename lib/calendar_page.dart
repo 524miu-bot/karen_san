@@ -12,6 +12,7 @@ import 'planner.dart';
 import 'routine_page.dart';
 import 'streams.dart';
 import 'l10n.dart';
+import 'maps.dart';
 import 'models.dart';
 import 'oshi.dart';
 import 'repository.dart';
@@ -1097,9 +1098,33 @@ class _EventTile extends StatelessWidget {
                     ].join('   '),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
+                  if (event.location.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.place_outlined, size: 14),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              event.location,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
+            if (event.location.isNotEmpty)
+              IconButton(
+                tooltip: context.l10n.openInMaps,
+                icon: const Icon(Icons.map_outlined),
+                onPressed: () => openInMaps(context, event.location),
+              ),
             Icon(event.isRoutine ? Icons.repeat : Icons.chevron_right),
           ],
         ),

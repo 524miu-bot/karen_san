@@ -12,7 +12,32 @@ DateTime _dayOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 // 1 週間のルーティーン
 // ---------------------------------------------------------------------------
 
-/// 毎週決まった曜日にある予定。カレンダーには自動で表示され、予定としては保存しない。
+/// ルーティーンの繰り返し方。
+enum RepeatRule {
+  /// 毎週、選んだ曜日
+  weekly,
+
+  /// 隔週（2 週間ごと）、選んだ曜日。基準日の週から数える
+  biweekly,
+
+  /// 毎月、基準日と同じ日付（例：毎月 15 日）。その日がない月は月末
+  monthlyDate,
+
+  /// 毎月、基準日と同じ「第◯◯曜日」（例：第 2 土曜日）。その週がない月はなし
+  monthlyWeekday;
+
+  static RepeatRule fromName(String? name) => RepeatRule.values.firstWhere(
+    (r) => r.name == name,
+    orElse: () => RepeatRule.weekly,
+  );
+
+  bool get isMonthly => this == monthlyDate || this == monthlyWeekday;
+}
+
+/// [d] がその月の第何週目の曜日か（1〜5）。
+int nthWeekdayOfMonth(DateTime d) => (d.day - 1) ~/ 7 + 1;
+
+/// 毎週・隔週・毎月の決まった予定。カレンダーには自動で表示され、予定としては保存しない。
 class Routine {
   Routine({
     this.id,
@@ -27,7 +52,22 @@ class Routine {
     this.skipDates = const {},
     this.kind = CalendarKind.family,
     this.categoryId,
+    this.repeat = RepeatRule.weekly,
+    this.anchorDate,
+    this.location = '',
   });
+
+  /// 場所（体育館・集合場所など）。
+  final String location;
+
+  /// 繰り返し方。
+  final RepeatRule repeat;
+
+  /// 隔週・毎月の基準日（dateKey の形）。毎週なら使わない。
+  final String? anchorDate;
+
+  DateTime? get anchor =>
+      anchorDate == null ? null : DateTime.tryParse(anchorDate!);
 
   final String? id;
   final String title;
@@ -77,6 +117,9 @@ class Routine {
       },
       kind: kind,
       categoryId: m['category'] as String?,
+      repeat: RepeatRule.fromName(m['repeat'] as String?),
+      anchorDate: m['anchor'] as String?,
+      location: m['location'] as String? ?? '',
     );
   }
 
@@ -91,6 +134,9 @@ class Routine {
     'skipHolidays': skipHolidays,
     'skipDates': skipDates.toList()..sort(),
     if (categoryId != null) 'category': categoryId,
+    'repeat': repeat.name,
+    'anchor': ?anchorDate,
+    'location': location,
   };
 
   Routine copyWith({Set<String>? skipDates}) => Routine(
@@ -106,11 +152,43 @@ class Routine {
     skipDates: skipDates ?? this.skipDates,
     kind: kind,
     categoryId: categoryId,
+    repeat: repeat,
+    anchorDate: anchorDate,
+    location: location,
   );
+
+  bool _matchesRepeat(DateTime day) {
+    final a = anchor;
+    switch (repeat) {
+      case RepeatRule.weekly:
+        return weekdays.contains(day.weekday);
+      case RepeatRule.biweekly:
+        if (!weekdays.contains(day.weekday)) return false;
+        if (a == null) return true;
+        // 基準日の週から数えて偶数週目（前の週にさかのぼっても同じ並び）
+        final weeks =
+            _weekStartUtc(day).difference(_weekStartUtc(a)).inDays ~/ 7;
+        return weeks.isEven;
+      case RepeatRule.monthlyDate:
+        if (a == null) return false;
+        final last = DateTime(day.year, day.month + 1, 0).day;
+        return day.day == (a.day > last ? last : a.day);
+      case RepeatRule.monthlyWeekday:
+        if (a == null) return false;
+        return day.weekday == a.weekday &&
+            nthWeekdayOfMonth(day) == nthWeekdayOfMonth(a);
+    }
+  }
+
+  /// その日を含む週の日曜日（UTC で日数を数えるため。夏時間でずれないように）。
+  static DateTime _weekStartUtc(DateTime d) {
+    final u = DateTime.utc(d.year, d.month, d.day);
+    return u.subtract(Duration(days: u.weekday % 7));
+  }
 
   /// [day] にこのルーティーンがあるか。祝日の判定は日本の祝日を使う。
   bool occursOn(DateTime day) {
-    if (!weekdays.contains(day.weekday)) return false;
+    if (!_matchesRepeat(_dayOnly(day))) return false;
     if (skipDates.contains(dateKey(day))) return false;
     if (skipHolidays && holidayName(day) != null) return false;
     return true;
@@ -132,6 +210,7 @@ class Routine {
       kind: kind,
       routineId: id,
       categoryId: categoryId,
+      location: location,
     );
   }
 }

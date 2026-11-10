@@ -157,7 +157,11 @@ class CalendarEvent {
     this.kind = CalendarKind.family,
     this.routineId,
     this.categoryId,
+    this.location = '',
   });
+
+  /// 場所（集合場所など）。地図アプリで開ける。
+  final String location;
 
   /// [ownerId] がこの値なら「みんなの予定」。
   static const everyone = 'everyone';
@@ -206,6 +210,7 @@ class CalendarEvent {
       createdByName: d['createdByName'] as String? ?? '',
       ownerId: d['ownerId'] as String? ?? '',
       categoryId: d['category'] as String?,
+      location: d['location'] as String? ?? '',
     );
   }
 
@@ -219,6 +224,7 @@ class CalendarEvent {
     'createdByName': createdByName,
     'ownerId': ownerId,
     if (categoryId != null) 'category': categoryId,
+    'location': location,
     'updatedAt': FieldValue.serverTimestamp(),
   };
 

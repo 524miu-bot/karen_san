@@ -203,5 +203,20 @@
   "viewName": "カレンダーの名前",
   "categoryLabel": "種類",
   "addCalendarShort": "追加",
-  "addCalendarHelp": "好きな名前のカレンダーを追加"
+  "addCalendarHelp": "好きな名前のカレンダーを追加",
+  "repeatHow": "繰り返し",
+  "repeatWeekly": "毎週",
+  "repeatBiweekly": "隔週",
+  "repeatMonthlyDate": "毎月（日付）",
+  "repeatMonthlyWeekday": "毎月（曜日）",
+  "repeatBiweeklyFrom": "始まりの週",
+  "repeatMonthlyFrom": "基準にする日",
+  "repeatMonthlySection": "毎月",
+  "everyMonthDay": "毎月 {day} 日",
+  "everyMonthNthWeekday": "毎月 第 {nth} {weekday}",
+  "location": "場所",
+  "locationHint": "集合場所・住所・地図で探せる名前",
+  "openInMaps": "地図で開く",
+  "googleMaps": "Google マップ",
+  "appleMaps": "Apple のマップ"
 }

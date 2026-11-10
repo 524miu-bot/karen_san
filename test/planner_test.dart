@@ -125,4 +125,110 @@ void main() {
       expect(r.thisWeek, hasLength(2));
     });
   });
+
+  group('隔週・毎月のルーティーン', () {
+    test('隔週：基準日の週から 2 週間ごと（前の週にさかのぼっても同じ）', () {
+      // 基準日 2026-11-10（火）。火曜日の隔週
+      final r = Routine(
+        id: 'r',
+        title: 'バスケ遠征',
+        weekdays: {DateTime.tuesday},
+        repeat: RepeatRule.biweekly,
+        anchorDate: '2026-11-10',
+      );
+      expect(r.occursOn(DateTime(2026, 11, 10)), isTrue);
+      expect(r.occursOn(DateTime(2026, 11, 17)), isFalse);
+      expect(r.occursOn(DateTime(2026, 11, 24)), isTrue);
+      expect(r.occursOn(DateTime(2026, 11, 3)), isFalse);
+      expect(r.occursOn(DateTime(2026, 10, 27)), isTrue);
+      // 年をまたいでも 2 週間ごと（2026-12-22 から 2 週後は 2027-01-05）
+      expect(r.occursOn(DateTime(2026, 12, 22)), isTrue);
+      expect(r.occursOn(DateTime(2027, 1, 5)), isTrue);
+      expect(r.occursOn(DateTime(2026, 12, 29)), isFalse);
+    });
+
+    test('毎月（日付）：同じ日付、その日がない月は月末', () {
+      final r = Routine(
+        id: 'r',
+        title: '集金',
+        weekdays: const {},
+        repeat: RepeatRule.monthlyDate,
+        anchorDate: '2026-10-31',
+        allDay: true,
+      );
+      expect(r.occursOn(DateTime(2026, 10, 31)), isTrue);
+      expect(r.occursOn(DateTime(2026, 11, 30)), isTrue); // 11 月は 30 日まで
+      expect(r.occursOn(DateTime(2026, 11, 29)), isFalse);
+      expect(r.occursOn(DateTime(2027, 2, 28)), isTrue);
+      expect(r.occursOn(DateTime(2026, 12, 31)), isTrue);
+    });
+
+    test('毎月（曜日）：同じ「第◯◯曜日」、第 5 週がない月はなし', () {
+      // 2026-11-14 は第 2 土曜日
+      final second = Routine(
+        id: 'r',
+        title: '練習試合',
+        weekdays: const {},
+        repeat: RepeatRule.monthlyWeekday,
+        anchorDate: '2026-11-14',
+      );
+      expect(nthWeekdayOfMonth(DateTime(2026, 11, 14)), 2);
+      expect(second.occursOn(DateTime(2026, 11, 14)), isTrue);
+      expect(second.occursOn(DateTime(2026, 12, 12)), isTrue); // 12 月の第 2 土曜
+      expect(second.occursOn(DateTime(2026, 12, 5)), isFalse);
+      // 2026-10-31 は第 5 土曜日。11 月には第 5 土曜がない
+      final fifth = second.copyWith().withAnchor('2026-10-31');
+      expect(fifth.occursOn(DateTime(2026, 10, 31)), isTrue);
+      expect(monthlyHas(fifth, 2026, 11), isFalse);
+      expect(fifth.occursOn(DateTime(2027, 1, 30)), isTrue); // 2027-01 の第 5 土曜
+    });
+
+    test('祝日はお休み・この日だけ休みは、隔週・毎月でも効く', () {
+      final r = Routine(
+        id: 'r',
+        title: '面談',
+        weekdays: const {},
+        repeat: RepeatRule.monthlyDate,
+        anchorDate: '2026-11-03',
+        skipHolidays: true,
+      );
+      expect(r.occursOn(DateTime(2026, 11, 3)), isFalse); // 文化の日
+      expect(r.occursOn(DateTime(2026, 12, 3)), isTrue);
+    });
+
+    test('保存用の形と読み込みが一致し、古いルーティーンは毎週', () {
+      final r = Routine(
+        id: 'r',
+        title: 'x',
+        weekdays: {DateTime.friday},
+        repeat: RepeatRule.biweekly,
+        anchorDate: '2026-11-13',
+      );
+      final back = Routine.fromMap('r', r.toMap());
+      expect(back.repeat, RepeatRule.biweekly);
+      expect(back.anchorDate, '2026-11-13');
+      expect(
+        Routine.fromMap('o', {
+          'title': '古い',
+          'weekdays': [1],
+        }).repeat,
+        RepeatRule.weekly,
+      );
+    });
+  });
 }
+
+extension on Routine {
+  Routine withAnchor(String key) => Routine(
+    id: id,
+    title: title,
+    weekdays: weekdays,
+    repeat: repeat,
+    anchorDate: key,
+  );
+}
+
+bool monthlyHas(Routine r, int year, int month) => [
+  for (var d = 1; d <= DateTime(year, month + 1, 0).day; d++)
+    r.occursOn(DateTime(year, month, d)),
+].any((x) => x);

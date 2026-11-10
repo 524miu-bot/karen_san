@@ -665,4 +665,53 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get addCalendarHelp => '好きな名前のカレンダーを追加';
+
+  @override
+  String get repeatHow => '繰り返し';
+
+  @override
+  String get repeatWeekly => '毎週';
+
+  @override
+  String get repeatBiweekly => '隔週';
+
+  @override
+  String get repeatMonthlyDate => '毎月（日付）';
+
+  @override
+  String get repeatMonthlyWeekday => '毎月（曜日）';
+
+  @override
+  String get repeatBiweeklyFrom => '始まりの週';
+
+  @override
+  String get repeatMonthlyFrom => '基準にする日';
+
+  @override
+  String get repeatMonthlySection => '毎月';
+
+  @override
+  String everyMonthDay(int day) {
+    return '毎月 $day 日';
+  }
+
+  @override
+  String everyMonthNthWeekday(int nth, String weekday) {
+    return '毎月 第 $nth $weekday';
+  }
+
+  @override
+  String get location => '場所';
+
+  @override
+  String get locationHint => '集合場所・住所・地図で探せる名前';
+
+  @override
+  String get openInMaps => '地図で開く';
+
+  @override
+  String get googleMaps => 'Google マップ';
+
+  @override
+  String get appleMaps => 'Apple のマップ';
 }

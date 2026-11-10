@@ -684,4 +684,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addCalendarHelp => 'Add a calendar with any name you like';
+
+  @override
+  String get repeatHow => 'Repeat';
+
+  @override
+  String get repeatWeekly => 'Weekly';
+
+  @override
+  String get repeatBiweekly => 'Every 2 weeks';
+
+  @override
+  String get repeatMonthlyDate => 'Monthly (date)';
+
+  @override
+  String get repeatMonthlyWeekday => 'Monthly (weekday)';
+
+  @override
+  String get repeatBiweeklyFrom => 'Starting week';
+
+  @override
+  String get repeatMonthlyFrom => 'Based on this date';
+
+  @override
+  String get repeatMonthlySection => 'Monthly';
+
+  @override
+  String everyMonthDay(int day) {
+    return 'Every month on day $day';
+  }
+
+  @override
+  String everyMonthNthWeekday(int nth, String weekday) {
+    return 'Every month on $weekday #$nth';
+  }
+
+  @override
+  String get location => 'Place';
+
+  @override
+  String get locationHint =>
+      'Meeting place, address, or a name to search on the map';
+
+  @override
+  String get openInMaps => 'Open in maps';
+
+  @override
+  String get googleMaps => 'Google Maps';
+
+  @override
+  String get appleMaps => 'Apple Maps';
 }

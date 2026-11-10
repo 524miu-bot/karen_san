@@ -7,6 +7,7 @@ import 'categories.dart';
 import 'family_settings_page.dart';
 import 'l10n.dart';
 import 'models.dart';
+import 'maps.dart';
 import 'repository.dart';
 
 /// 予定の追加・編集画面。[event] が null なら新規作成。
@@ -35,6 +36,9 @@ class EventEditorPage extends StatefulWidget {
 class _EventEditorPageState extends State<EventEditorPage> {
   late final _titleController = TextEditingController(
     text: widget.event?.title ?? '',
+  );
+  late final _locationController = TextEditingController(
+    text: widget.event?.location ?? '',
   );
   late final _noteController = TextEditingController(
     text: widget.event?.note ?? '',
@@ -83,6 +87,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   void dispose() {
     _titleController.dispose();
     _noteController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
@@ -143,6 +148,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
       end: end,
       allDay: _allDay,
       note: _noteController.text.trim(),
+      location: _locationController.text.trim(),
       createdBy: widget.event?.createdBy ?? _uid,
       createdByName: widget.event?.createdByName ?? widget.family.nameOf(_uid),
       // 仕事の予定は本人だけのものなので、誰の予定かは持たない
@@ -328,6 +334,8 @@ class _EventEditorPageState extends State<EventEditorPage> {
                 trailing: Text(fmt.format(_end)),
                 onTap: _pickEnd,
               ),
+              const SizedBox(height: 8),
+              LocationField(controller: _locationController),
               const SizedBox(height: 8),
               TextField(
                 controller: _noteController,

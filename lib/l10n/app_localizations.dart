@@ -1321,6 +1321,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add a calendar with any name you like'**
   String get addCalendarHelp;
+
+  /// No description provided for @repeatHow.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get repeatHow;
+
+  /// No description provided for @repeatWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get repeatWeekly;
+
+  /// No description provided for @repeatBiweekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every 2 weeks'**
+  String get repeatBiweekly;
+
+  /// No description provided for @repeatMonthlyDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly (date)'**
+  String get repeatMonthlyDate;
+
+  /// No description provided for @repeatMonthlyWeekday.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly (weekday)'**
+  String get repeatMonthlyWeekday;
+
+  /// No description provided for @repeatBiweeklyFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting week'**
+  String get repeatBiweeklyFrom;
+
+  /// No description provided for @repeatMonthlyFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Based on this date'**
+  String get repeatMonthlyFrom;
+
+  /// No description provided for @repeatMonthlySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get repeatMonthlySection;
+
+  /// No description provided for @everyMonthDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Every month on day {day}'**
+  String everyMonthDay(int day);
+
+  /// No description provided for @everyMonthNthWeekday.
+  ///
+  /// In en, this message translates to:
+  /// **'Every month on {weekday} #{nth}'**
+  String everyMonthNthWeekday(int nth, String weekday);
+
+  /// No description provided for @location.
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get location;
+
+  /// No description provided for @locationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Meeting place, address, or a name to search on the map'**
+  String get locationHint;
+
+  /// No description provided for @openInMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in maps'**
+  String get openInMaps;
+
+  /// No description provided for @googleMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Maps'**
+  String get googleMaps;
+
+  /// No description provided for @appleMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple Maps'**
+  String get appleMaps;
 }
 
 class _AppLocalizationsDelegate

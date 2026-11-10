@@ -9,6 +9,7 @@ import 'family_settings_page.dart';
 import 'l10n.dart';
 import 'models.dart';
 import 'planner.dart';
+import 'maps.dart';
 import 'repository.dart';
 import 'streams.dart';
 
@@ -88,6 +89,18 @@ class RoutinePage extends StatelessWidget {
                     ),
                     ..._tilesFor(context, routines, w),
                   ],
+                  // 毎月のルーティーンは曜日で分けられないので、最後にまとめる
+                  if (routines.any((r) => r.repeat.isMonthly)) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      child: Text(
+                        context.l10n.repeatMonthlySection,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                    for (final r in routines.where((r) => r.repeat.isMonthly))
+                      _tile(context, r),
+                  ],
                 ],
               ),
             ),
@@ -114,36 +127,35 @@ class RoutinePage extends StatelessWidget {
         ),
       ];
     }
-    return [
-      for (final r in list)
-        ListTile(
-          dense: true,
-          leading: Container(
-            width: 5,
-            height: 32,
-            decoration: BoxDecoration(
-              color: eventColor(
-                family,
-                r.occurrenceOn(DateTime(2024, 1, weekday)),
-              ),
-              borderRadius: BorderRadius.circular(3),
-            ),
-          ),
-          title: Text(r.title),
-          subtitle: Text(
-            [
-              routineTimeText(context, r),
-              if (r.kind == CalendarKind.work)
-                context.l10n.work
-              else
-                ownerName(context, family, r.ownerId),
-              if (r.skipHolidays) context.l10n.skipHolidaysShort,
-            ].join('   '),
-          ),
-          onTap: () => _openEditor(context, routine: r),
-        ),
-    ];
+    return [for (final r in list) _tile(context, r)];
   }
+
+  Widget _tile(BuildContext context, Routine r) => ListTile(
+    dense: true,
+    leading: Container(
+      width: 5,
+      height: 32,
+      decoration: BoxDecoration(
+        color: eventColor(family, r.occurrenceOn(DateTime(2024, 1, 1))),
+        borderRadius: BorderRadius.circular(3),
+      ),
+    ),
+    title: Text(r.title),
+    subtitle: Text(
+      [
+        routineTimeText(context, r),
+        if (r.kind == CalendarKind.work)
+          context.l10n.work
+        else
+          ownerName(context, family, r.ownerId),
+        if (r.repeat == RepeatRule.biweekly) context.l10n.repeatBiweekly,
+        if (r.repeat.isMonthly && r.anchor != null)
+          repeatDescription(context, r.repeat, r.anchor!),
+        if (r.skipHolidays) context.l10n.skipHolidaysShort,
+      ].join('   '),
+    ),
+    onTap: () => _openEditor(context, routine: r),
+  );
 }
 
 /// ルーティーンの追加・編集。
@@ -166,11 +178,34 @@ class RoutineEditorPage extends StatefulWidget {
 class _RoutineEditorPageState extends State<RoutineEditorPage> {
   late final _title = TextEditingController(text: widget.routine?.title ?? '');
   late final _note = TextEditingController(text: widget.routine?.note ?? '');
+  late final _location = TextEditingController(
+    text: widget.routine?.location ?? '',
+  );
   late CalendarKind _kind = widget.routine?.kind ?? CalendarKind.family;
   late String _categoryId =
       widget.routine?.categoryId ??
       (_kind == CalendarKind.work ? Category.workId : Category.familyId);
   late Set<int> _weekdays = {...?widget.routine?.weekdays};
+  late RepeatRule _repeat = widget.routine?.repeat ?? RepeatRule.weekly;
+
+  /// 隔週・毎月の基準日（初めは今日）。
+  late DateTime _anchor = widget.routine?.anchor ?? _todayOnly();
+
+  static DateTime _todayOnly() {
+    final n = DateTime.now();
+    return DateTime(n.year, n.month, n.day);
+  }
+
+  Future<void> _pickAnchor() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _anchor,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2099, 12, 31),
+    );
+    if (d != null) setState(() => _anchor = d);
+  }
+
   late bool _allDay = widget.routine?.allDay ?? false;
   late int _start = widget.routine?.startMinutes ?? 9 * 60;
   late int _end = widget.routine?.endMinutes ?? 10 * 60;
@@ -187,6 +222,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
   void dispose() {
     _title.dispose();
     _note.dispose();
+    _location.dispose();
     super.dispose();
   }
 
@@ -214,7 +250,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     final title = _title.text.trim();
     final problem = title.isEmpty
         ? l10n.titleRequired
-        : _weekdays.isEmpty
+        : !_repeat.isMonthly && _weekdays.isEmpty
         ? l10n.weekdaysRequired
         : !_allDay && _end <= _start
         ? l10n.endBeforeStart
@@ -233,12 +269,15 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
         Routine(
           id: widget.routine?.id,
           title: title,
-          weekdays: _weekdays,
+          weekdays: _repeat.isMonthly ? const {} : _weekdays,
+          repeat: _repeat,
+          anchorDate: _repeat == RepeatRule.weekly ? null : dateKey(_anchor),
           allDay: _allDay,
           startMinutes: _start,
           endMinutes: _end,
           ownerId: _kind == CalendarKind.work ? '' : _ownerId,
           note: _note.text.trim(),
+          location: _location.text.trim(),
           skipHolidays: _skipHolidays,
           skipDates: _skipDates,
           kind: _kind,
@@ -334,7 +373,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                 ),
               ),
               Text(
-                l10n.repeatOn,
+                l10n.repeatHow,
                 style: Theme.of(context).textTheme.labelLarge,
               ),
               const SizedBox(height: 8),
@@ -342,23 +381,61 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                 spacing: 6,
                 runSpacing: 6,
                 children: [
-                  for (var w = DateTime.monday; w <= DateTime.sunday; w++)
-                    FilterChip(
-                      label: Text(weekdayName(context, w, short: true)),
-                      selected: _weekdays.contains(w),
+                  for (final r in RepeatRule.values)
+                    ChoiceChip(
+                      label: Text(repeatRuleName(context, r)),
+                      selected: _repeat == r,
                       showCheckmark: false,
-                      onSelected: (on) => setState(() {
-                        _weekdays = {..._weekdays};
-                        on ? _weekdays.add(w) : _weekdays.remove(w);
-                      }),
+                      onSelected: (_) => setState(() => _repeat = r),
                     ),
-                  ActionChip(
-                    label: Text(l10n.weekdaysOnly),
-                    onPressed: () =>
-                        setState(() => _weekdays = {1, 2, 3, 4, 5}),
-                  ),
                 ],
               ),
+              const SizedBox(height: 12),
+              if (_repeat != RepeatRule.weekly)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.event_outlined),
+                  title: Text(
+                    _repeat.isMonthly
+                        ? l10n.repeatMonthlyFrom
+                        : l10n.repeatBiweeklyFrom,
+                  ),
+                  subtitle: _repeat.isMonthly
+                      ? Text(repeatDescription(context, _repeat, _anchor))
+                      : null,
+                  trailing: Text(
+                    DateFormat.yMMMEd(context.localeName).format(_anchor),
+                  ),
+                  onTap: _pickAnchor,
+                ),
+              if (!_repeat.isMonthly) ...[
+                Text(
+                  l10n.repeatOn,
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (var w = DateTime.monday; w <= DateTime.sunday; w++)
+                      FilterChip(
+                        label: Text(weekdayName(context, w, short: true)),
+                        selected: _weekdays.contains(w),
+                        showCheckmark: false,
+                        onSelected: (on) => setState(() {
+                          _weekdays = {..._weekdays};
+                          on ? _weekdays.add(w) : _weekdays.remove(w);
+                        }),
+                      ),
+                    ActionChip(
+                      label: Text(l10n.weekdaysOnly),
+                      onPressed: () =>
+                          setState(() => _weekdays = {1, 2, 3, 4, 5}),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 8),
               if (_kind == CalendarKind.family) ...[
                 Text(
@@ -455,6 +532,8 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                 ),
               ],
               const SizedBox(height: 12),
+              LocationField(controller: _location),
+              const SizedBox(height: 8),
               TextField(
                 controller: _note,
                 maxLines: 3,
@@ -482,3 +561,23 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     );
   }
 }
+
+/// 繰り返し方の名前（毎週・隔週・毎月（日付）・毎月（曜日））。
+String repeatRuleName(BuildContext context, RepeatRule r) => switch (r) {
+  RepeatRule.weekly => context.l10n.repeatWeekly,
+  RepeatRule.biweekly => context.l10n.repeatBiweekly,
+  RepeatRule.monthlyDate => context.l10n.repeatMonthlyDate,
+  RepeatRule.monthlyWeekday => context.l10n.repeatMonthlyWeekday,
+};
+
+/// 「毎月 15 日」「毎月 第 2 土曜日」のような説明。
+String repeatDescription(BuildContext context, RepeatRule r, DateTime anchor) =>
+    switch (r) {
+      RepeatRule.monthlyDate => context.l10n.everyMonthDay(anchor.day),
+      RepeatRule.monthlyWeekday => context.l10n.everyMonthNthWeekday(
+        nthWeekdayOfMonth(anchor),
+        weekdayName(context, anchor.weekday),
+      ),
+      RepeatRule.biweekly => context.l10n.repeatBiweekly,
+      RepeatRule.weekly => context.l10n.repeatWeekly,
+    };

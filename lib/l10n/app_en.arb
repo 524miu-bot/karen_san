@@ -335,5 +335,37 @@
   "viewName": "Calendar name",
   "categoryLabel": "Category",
   "addCalendarShort": "Add",
-  "addCalendarHelp": "Add a calendar with any name you like"
+  "addCalendarHelp": "Add a calendar with any name you like",
+  "repeatHow": "Repeat",
+  "repeatWeekly": "Weekly",
+  "repeatBiweekly": "Every 2 weeks",
+  "repeatMonthlyDate": "Monthly (date)",
+  "repeatMonthlyWeekday": "Monthly (weekday)",
+  "repeatBiweeklyFrom": "Starting week",
+  "repeatMonthlyFrom": "Based on this date",
+  "repeatMonthlySection": "Monthly",
+  "everyMonthDay": "Every month on day {day}",
+  "@everyMonthDay": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "everyMonthNthWeekday": "Every month on {weekday} #{nth}",
+  "@everyMonthNthWeekday": {
+    "placeholders": {
+      "nth": {
+        "type": "int"
+      },
+      "weekday": {
+        "type": "String"
+      }
+    }
+  },
+  "location": "Place",
+  "locationHint": "Meeting place, address, or a name to search on the map",
+  "openInMaps": "Open in maps",
+  "googleMaps": "Google Maps",
+  "appleMaps": "Apple Maps"
 }
