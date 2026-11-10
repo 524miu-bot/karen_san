@@ -1159,6 +1159,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get tabSettings;
+
+  /// No description provided for @editCalendars.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendars & categories'**
+  String get editCalendars;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @addCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Add category'**
+  String get addCategory;
+
+  /// No description provided for @editCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit category'**
+  String get editCategory;
+
+  /// No description provided for @categoryName.
+  ///
+  /// In en, this message translates to:
+  /// **'Category name'**
+  String get categoryName;
+
+  /// No description provided for @categoryNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Basketball, Karate'**
+  String get categoryNameHint;
+
+  /// No description provided for @categoryShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with family'**
+  String get categoryShared;
+
+  /// No description provided for @categoryPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Only me'**
+  String get categoryPrivate;
+
+  /// No description provided for @categorySharedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone in the group can see these events (good for kids\' activities).'**
+  String get categorySharedHelp;
+
+  /// No description provided for @categoryPrivateHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Only you can see these events (like work).'**
+  String get categoryPrivateHelp;
+
+  /// No description provided for @deleteCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"?'**
+  String deleteCategoryTitle(String name);
+
+  /// No description provided for @deleteCategoryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Events in this category are not deleted. They will show as Family or Work.'**
+  String get deleteCategoryBody;
+
+  /// No description provided for @calendarSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendars & categories'**
+  String get calendarSettingsTitle;
+
+  /// No description provided for @viewsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendars to show'**
+  String get viewsSection;
+
+  /// No description provided for @viewsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Make calendars that combine categories, like \"Basketball + Karate\" or \"Karate + Family\". Swipe left and right on the calendar to switch. These are your own settings.'**
+  String get viewsHelp;
+
+  /// No description provided for @viewAllHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Every category'**
+  String get viewAllHelp;
+
+  /// No description provided for @moveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get moveUp;
+
+  /// No description provided for @addView.
+  ///
+  /// In en, this message translates to:
+  /// **'Add calendar'**
+  String get addView;
+
+  /// No description provided for @editView.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit calendar'**
+  String get editView;
+
+  /// No description provided for @categoriesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get categoriesSection;
+
+  /// No description provided for @categoriesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a category for each event. Add your own, like Basketball or Karate.'**
+  String get categoriesHelp;
+
+  /// No description provided for @viewNeedsCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one category.'**
+  String get viewNeedsCategory;
+
+  /// No description provided for @viewPickCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories to show in this calendar'**
+  String get viewPickCategories;
+
+  /// No description provided for @viewName.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar name'**
+  String get viewName;
+
+  /// No description provided for @categoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get categoryLabel;
 }
 
 class _AppLocalizationsDelegate

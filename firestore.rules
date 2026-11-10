@@ -66,10 +66,11 @@ service cloud.firestore {
       allow update: if signedIn() && (
         // メンバーはグループ名、自分の表示名・色、ログインしない予定者（people）を変更できる
         (request.auth.uid in resource.data.memberIds
-          && changedKeys().hasOnly(['name', 'memberNames', 'memberColors', 'people'])
+          && changedKeys().hasOnly(['name', 'memberNames', 'memberColors', 'people', 'categories'])
           && onlyOwnNameChanged()
           && onlyOwnColorChanged()
-          && request.resource.data.get('people', {}).size() <= 30)
+          && request.resource.data.get('people', {}).size() <= 30
+          && request.resource.data.get('categories', {}).size() <= 30)
         ||
         // メンバー以外は、正しい招待コードを添えて自分を追加することだけできる
         (!(request.auth.uid in resource.data.memberIds)

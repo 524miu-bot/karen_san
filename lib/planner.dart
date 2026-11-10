@@ -26,10 +26,14 @@ class Routine {
     this.skipHolidays = false,
     this.skipDates = const {},
     this.kind = CalendarKind.family,
+    this.categoryId,
   });
 
   final String? id;
   final String title;
+
+  /// 予定の種類（categories.dart の Category の ID）。古いものは null。
+  final String? categoryId;
 
   /// 曜日（DateTime.monday = 1 〜 DateTime.sunday = 7）。
   final Set<int> weekdays;
@@ -72,6 +76,7 @@ class Routine {
         for (final s in (m['skipDates'] as List? ?? const [])) s as String,
       },
       kind: kind,
+      categoryId: m['category'] as String?,
     );
   }
 
@@ -85,6 +90,7 @@ class Routine {
     'note': note,
     'skipHolidays': skipHolidays,
     'skipDates': skipDates.toList()..sort(),
+    if (categoryId != null) 'category': categoryId,
   };
 
   Routine copyWith({Set<String>? skipDates}) => Routine(
@@ -99,6 +105,7 @@ class Routine {
     skipHolidays: skipHolidays,
     skipDates: skipDates ?? this.skipDates,
     kind: kind,
+    categoryId: categoryId,
   );
 
   /// [day] にこのルーティーンがあるか。祝日の判定は日本の祝日を使う。
@@ -124,6 +131,7 @@ class Routine {
       ownerId: ownerId,
       kind: kind,
       routineId: id,
+      categoryId: categoryId,
     );
   }
 }

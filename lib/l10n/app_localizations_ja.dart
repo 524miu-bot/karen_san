@@ -581,4 +581,82 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get tabSettings => '設定';
+
+  @override
+  String get editCalendars => 'カレンダーと種類の設定';
+
+  @override
+  String get today => '今日';
+
+  @override
+  String get addCategory => '種類を追加';
+
+  @override
+  String get editCategory => '種類を編集';
+
+  @override
+  String get categoryName => '種類の名前';
+
+  @override
+  String get categoryNameHint => '例：バスケ、空手、塾';
+
+  @override
+  String get categoryShared => '家族と共有';
+
+  @override
+  String get categoryPrivate => '自分だけ';
+
+  @override
+  String get categorySharedHelp => 'グループの全員がこの種類の予定を見られます（子どもの習い事などに）。';
+
+  @override
+  String get categoryPrivateHelp => 'この種類の予定は自分だけが見られます（仕事などに）。';
+
+  @override
+  String deleteCategoryTitle(String name) {
+    return '「$name」を削除しますか？';
+  }
+
+  @override
+  String get deleteCategoryBody => 'この種類の予定は消えません。「家庭」または「仕事」として表示されます。';
+
+  @override
+  String get calendarSettingsTitle => 'カレンダーと種類の設定';
+
+  @override
+  String get viewsSection => '表示するカレンダー';
+
+  @override
+  String get viewsHelp =>
+      '「バスケ＋空手」「空手＋家庭」のように、種類を組み合わせたカレンダーを作れます。カレンダーの画面で左右にスワイプすると切り替わります。この設定は自分だけのものです。';
+
+  @override
+  String get viewAllHelp => 'すべての種類';
+
+  @override
+  String get moveUp => '上へ';
+
+  @override
+  String get addView => 'カレンダーを追加';
+
+  @override
+  String get editView => 'カレンダーを編集';
+
+  @override
+  String get categoriesSection => '予定の種類';
+
+  @override
+  String get categoriesHelp => '予定ごとに種類を選びます。バスケや空手など、自分で種類を追加できます。';
+
+  @override
+  String get viewNeedsCategory => '種類を 1 つ以上選んでください。';
+
+  @override
+  String get viewPickCategories => 'このカレンダーに出す種類';
+
+  @override
+  String get viewName => 'カレンダーの名前';
+
+  @override
+  String get categoryLabel => '種類';
 }

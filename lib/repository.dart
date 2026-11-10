@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/painting.dart';
 
+import 'categories.dart';
 import 'models.dart';
 import 'oshi.dart';
 import 'planner.dart';
@@ -337,4 +338,52 @@ class Repository {
   Future<void> setOshi(String uid, List<Oshi> list) => _userDoc(uid).set({
     'oshi': [for (final o in list) o.toMap()],
   }, SetOptions(merge: true));
+
+  // ---- 予定の種類（カテゴリ）と、表示カレンダー（種類の組み合わせ） ----
+  // 共有の種類：families/{id}.categories、自分だけの種類と表示カレンダー：users/{uid}
+
+  static String newCategoryId() =>
+      'c_${FirebaseFirestore.instance.collection('_').doc().id}';
+  static String newViewId() =>
+      'v_${FirebaseFirestore.instance.collection('_').doc().id}';
+
+  /// 自分だけの種類と、自分の表示カレンダー（まだ作っていなければ null）。
+  Stream<({Map<String, Category> categories, List<CalendarViewDef>? views})>
+  watchMyCalendarSettings(String uid) => _userDoc(uid).snapshots().map((s) {
+    final d = s.data() ?? const <String, dynamic>{};
+    final views = d['calendarViews'] as List?;
+    return (
+      categories: {
+        for (final e in (d['categories'] as Map? ?? const {}).entries)
+          e.key as String: Category.fromMap(
+            e.key as String,
+            e.value as Map,
+            shared: false,
+          ),
+      },
+      views: views == null
+          ? null
+          : [
+              for (final v in views)
+                CalendarViewDef.fromMap(Map<String, dynamic>.from(v as Map)),
+            ],
+    );
+  });
+
+  Future<void> saveCategory(Place place, Category c) => c.shared
+      ? _familyDoc(place.familyId).update({'categories.${c.id}': c.toMap()})
+      : _userDoc(place.uid).set({
+          'categories': {c.id: c.toMap()},
+        }, SetOptions(merge: true));
+
+  /// 種類を削除する。その種類の予定は消えず、「家庭」または「仕事」として表示される。
+  Future<void> deleteCategory(Place place, Category c) => c.shared
+      ? _familyDoc(place.familyId)
+            .update({'categories.${c.id}': FieldValue.delete()})
+      : _userDoc(place.uid).update({'categories.${c.id}': FieldValue.delete()});
+
+  Future<void> saveViews(String uid, List<CalendarViewDef> views) =>
+      _userDoc(uid).set({
+        'calendarViews': [for (final v in views) v.toMap()],
+      }, SetOptions(merge: true));
 }

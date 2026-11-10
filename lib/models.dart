@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import 'categories.dart';
+
 /// メンバーが選べる色。色を選んでいないメンバーには参加順に割り当てる。
 /// 予定の帯に白い文字を載せるので、濃いめの色にしている。
 const memberPalette = <Color>[
@@ -44,6 +46,7 @@ class Family {
     required this.memberNames,
     this.memberColors = const {},
     this.people = const {},
+    this.categories = const {},
   });
 
   final String id;
@@ -59,6 +62,9 @@ class Family {
 
   /// ログインしない予定者。
   final Map<String, Person> people;
+
+  /// 家族で共有する予定の種類（バスケ・空手 など。最初からある「家庭」は含まない）。
+  final Map<String, Category> categories;
 
   factory Family.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
@@ -84,6 +90,14 @@ class Family {
         (k, v) => MapEntry(k as String, (v as num).toInt()),
       ),
       people: people,
+      categories: {
+        for (final e in (d['categories'] as Map? ?? const {}).entries)
+          e.key as String: Category.fromMap(
+            e.key as String,
+            e.value as Map,
+            shared: true,
+          ),
+      },
     );
   }
 
@@ -142,6 +156,7 @@ class CalendarEvent {
     this.ownerId = '',
     this.kind = CalendarKind.family,
     this.routineId,
+    this.categoryId,
   });
 
   /// [ownerId] がこの値なら「みんなの予定」。
@@ -167,6 +182,10 @@ class CalendarEvent {
 
   bool get isRoutine => routineId != null;
 
+  /// 予定の種類（家庭・仕事・バスケ など。categories.dart の Category の ID）。
+  /// 古い予定は null で、保存場所から決める（categoryOf）。
+  final String? categoryId;
+
   /// 誰の予定か。古い予定（[ownerId] なし）は登録した人の予定とみなす。
   String get owner => ownerId.isNotEmpty ? ownerId : createdBy;
 
@@ -186,6 +205,7 @@ class CalendarEvent {
       createdBy: d['createdBy'] as String? ?? '',
       createdByName: d['createdByName'] as String? ?? '',
       ownerId: d['ownerId'] as String? ?? '',
+      categoryId: d['category'] as String?,
     );
   }
 
@@ -198,6 +218,7 @@ class CalendarEvent {
     'createdBy': createdBy,
     'createdByName': createdByName,
     'ownerId': ownerId,
+    if (categoryId != null) 'category': categoryId,
     'updatedAt': FieldValue.serverTimestamp(),
   };
 

@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'calendar_settings_page.dart';
+import 'categories.dart';
 import 'event_editor_page.dart';
 import 'planner.dart';
 import 'routine_page.dart';
 import 'streams.dart';
-import 'holidays.dart';
 import 'l10n.dart';
 import 'models.dart';
 import 'oshi.dart';
@@ -44,12 +44,36 @@ int _compareEvents(CalendarEvent a, CalendarEvent b) {
   return (a.id ?? '').compareTo(b.id ?? '');
 }
 
-/// カレンダーに表示する範囲。
-enum CalendarView { all, family, work }
+/// 予定の色。家族で共有する予定は誰の予定かで、自分だけの予定は種類の色で色分けする。
+Color eventColor(
+  Family family,
+  CalendarEvent e, [
+  Map<String, Category> categories = const {},
+]) {
+  if (e.kind == CalendarKind.family) return family.colorOf(e.owner);
+  return categories[categoryOf(e)]?.displayColor ?? workColor;
+}
 
-/// 予定の色。仕事の予定は仕事の色、家庭の予定は誰の予定かで色分けする。
-Color eventColor(Family family, CalendarEvent e) =>
-    e.kind == CalendarKind.work ? workColor : family.colorOf(e.owner);
+/// 画面の下の方（マスや一覧）に予定の種類を渡す。
+class CategoryScope extends InheritedWidget {
+  const CategoryScope({
+    super.key,
+    required this.categories,
+    required super.child,
+  });
+
+  final Map<String, Category> categories;
+
+  static Map<String, Category> of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<CategoryScope>()?.categories ??
+      const {};
+
+  @override
+  bool updateShouldNotify(CategoryScope old) => old.categories != categories;
+}
+
+/// 縦スクロールの月のページ番号の基準（この番号が今月）。
+const monthPagerCenter = 1200;
 
 /// 家庭（家族で共有）と仕事（本人だけ）をまとめて表示するカレンダー。
 class CalendarPage extends StatefulWidget {
@@ -70,18 +94,59 @@ class _CalendarPageState extends State<CalendarPage> {
     widget.familyId,
   );
   List<CalendarEvent> _events = const [];
-  CalendarView _view = CalendarView.all;
+
+  /// 左右のスワイプで切り替える表示カレンダー（すべて・家庭・バスケ＋空手 など）。
+  int _viewIndex = 0;
+  late final PageController _viewPager = PageController();
+  late final DateTime _thisMonth = DateTime(_today().year, _today().month);
+
+  /// 自分だけの種類と、自分で作った表示カレンダー。
+  late final StreamSubscription<
+    ({Map<String, Category> categories, List<CalendarViewDef>? views})
+  >
+  _settingsSub = Repository.instance
+      .watchMyCalendarSettings(widget.user.uid)
+      .listen(
+        (s) => setState(() {
+          _myCategories = s.categories;
+          _savedViews = s.views;
+        }),
+        onError: (_) {},
+      );
+  Map<String, Category> _myCategories = const {};
+  List<CalendarViewDef>? _savedViews;
+
+  List<CalendarViewDef> _views(BuildContext context) {
+    final l10n = context.l10n;
+    final saved = _savedViews;
+    return saved == null
+        ? defaultViews(
+            allName: l10n.viewAll,
+            familyName: l10n.family,
+            workName: l10n.work,
+          )
+        : withAllFirst(saved, allName: l10n.viewAll);
+  }
+
+  CalendarViewDef _currentView(BuildContext context) {
+    final views = _views(context);
+    return views[_viewIndex.clamp(0, views.length - 1)];
+  }
+
+  List<Category> _categories(BuildContext context, Family family) =>
+      mergeCategories(
+        familyName: context.l10n.family,
+        workName: context.l10n.work,
+        shared: family.categories,
+        private: _myCategories,
+      );
 
   late final Place _place = Place(
     familyId: widget.familyId,
     uid: widget.user.uid,
   );
 
-  bool _isVisible(CalendarEvent e) => switch (_view) {
-    CalendarView.all => true,
-    CalendarView.family => e.kind == CalendarKind.family,
-    CalendarView.work => e.kind == CalendarKind.work,
-  };
+  bool _isVisible(CalendarEvent e) => _currentView(context).shows(e);
 
   /// 取り込んだ X の投稿（本人のものだけ）。
   late Stream<Map<String, List<XPost>>> _xStream = _xStreamFor(
@@ -101,11 +166,14 @@ class _CalendarPageState extends State<CalendarPage> {
   void initState() {
     super.initState();
     _oshiSub; // 読み込みを始める
+    _settingsSub;
   }
 
   @override
   void dispose() {
     _oshiSub.cancel();
+    _settingsSub.cancel();
+    _viewPager.dispose();
     super.dispose();
   }
 
@@ -142,10 +210,6 @@ class _CalendarPageState extends State<CalendarPage> {
     ]);
   }
 
-  List<CalendarEvent> _eventsOn(DateTime day) =>
-      _events.where((e) => _isVisible(e) && e.occursOn(day)).toList()
-        ..sort(_compareEvents);
-
   void _onPageChanged(DateTime focusedDay) {
     setState(() {
       _focusedDay = focusedDay;
@@ -162,16 +226,22 @@ class _CalendarPageState extends State<CalendarPage> {
       _showRoutineActions(family, event);
       return;
     }
+    // 種類が 1 つだけの表示カレンダーなら、新しい予定もその種類にする
+    final only = _currentView(context).categoryIds;
+    final initial = only != null && only.length == 1
+        ? _categories(
+            context,
+            family,
+          ).where((c) => c.id == only.first).firstOrNull
+        : null;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => EventEditorPage(
           family: family,
           initialDay: day ?? _selectedDay,
           event: event,
-          // 「仕事」だけを表示しているときは、新しい予定も仕事にする
-          initialKind: _view == CalendarView.work
-              ? CalendarKind.work
-              : CalendarKind.family,
+          initialCategoryId: initial?.id ?? Category.familyId,
+          initialKind: initial?.kind ?? CalendarKind.family,
         ),
       ),
     );
@@ -179,149 +249,167 @@ class _CalendarPageState extends State<CalendarPage> {
 
   /// 日付をタップしたときに、その日の予定を下から表示する。
   void _showDay(Family family, DateTime day) {
+    final categories = {for (final c in _categories(context, family)) c.id: c};
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
       constraints: const BoxConstraints(maxWidth: 720),
-      builder: (sheetContext) => StreamBuilder<List<CalendarEvent>>(
-        stream: _streamFor(day),
-        initialData: _events,
-        builder: (context, snap) {
-          final dayEvents =
-              (snap.data ?? const <CalendarEvent>[])
-                  .where((e) => _isVisible(e) && e.occursOn(day))
-                  .toList()
-                ..sort(_compareEvents);
-          return ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * 0.6,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 8, 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              DateFormat.MMMEd(context.localeName).format(day),
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    color: _dayColor(
-                                      day,
-                                      isHoliday:
-                                          localizedHolidayName(context, day) !=
-                                          null,
-                                    ),
-                                  ),
-                            ),
-                            if (localizedHolidayName(context, day)
-                                case final name?)
+      builder: (sheetContext) => CategoryScope(
+        categories: categories,
+        child: StreamBuilder<List<CalendarEvent>>(
+          stream: _streamFor(day),
+          initialData: _events,
+          builder: (context, snap) {
+            final dayEvents =
+                (snap.data ?? const <CalendarEvent>[])
+                    .where((e) => _isVisible(e) && e.occursOn(day))
+                    .toList()
+                  ..sort(_compareEvents);
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.6,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 8, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Text(
-                                name,
-                                style: const TextStyle(color: _sundayColor),
+                                DateFormat.MMMEd(context.localeName)
+                                    .format(day),
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      color: _dayColor(
+                                        day,
+                                        isHoliday:
+                                            localizedHolidayName(
+                                              context,
+                                              day,
+                                            ) !=
+                                            null,
+                                      ),
+                                    ),
                               ),
-                          ],
+                              if (localizedHolidayName(context, day)
+                                  case final name?)
+                                Text(
+                                  name,
+                                  style: const TextStyle(color: _sundayColor),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                      FilledButton.tonalIcon(
-                        onPressed: () {
-                          Navigator.pop(sheetContext);
-                          _openEditor(family, day: day);
-                        },
-                        icon: const Icon(Icons.add),
-                        label: Text(context.l10n.addEvent),
-                      ),
-                    ],
+                        FilledButton.tonalIcon(
+                          onPressed: () {
+                            Navigator.pop(sheetContext);
+                            _openEditor(family, day: day);
+                          },
+                          icon: const Icon(Icons.add),
+                          label: Text(context.l10n.addEvent),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Flexible(
-                  child: StreamBuilder<Map<String, List<XPost>>>(
-                    stream: _xStreamFor(day, days: 1),
-                    initialData: {
-                      dayKey(day): _xPosts[dayKey(day)] ?? const [],
-                    },
-                    builder: (context, xSnap) {
-                      final dayPosts = xSnap.data?[dayKey(day)];
-                      final posts = _showX && dayPosts != null
-                          ? dayPosts
-                          : const <XPost>[];
-                      return ListView(
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.only(bottom: 24),
-                        children: [
-                          if (dayEvents.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                20,
-                                16,
-                                20,
-                                24,
+                  Flexible(
+                    child: StreamBuilder<Map<String, List<XPost>>>(
+                      stream: _xStreamFor(day, days: 1),
+                      initialData: {
+                        dayKey(day): _xPosts[dayKey(day)] ?? const [],
+                      },
+                      builder: (context, xSnap) {
+                        final dayPosts = xSnap.data?[dayKey(day)];
+                        final posts = _showX && dayPosts != null
+                            ? dayPosts
+                            : const <XPost>[];
+                        return ListView(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.only(bottom: 24),
+                          children: [
+                            if (dayEvents.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  16,
+                                  20,
+                                  24,
+                                ),
+                                child: Text(context.l10n.noEvents),
                               ),
-                              child: Text(context.l10n.noEvents),
-                            ),
-                          for (final e in dayEvents)
-                            _EventTile(
-                              event: e,
-                              family: family,
-                              onTap: () {
-                                Navigator.pop(sheetContext);
-                                _openEditor(family, event: e);
-                              },
-                            ),
-                          if (posts.isNotEmpty) ...[
-                            const Divider(),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-                              child: Text(
-                                context.l10n.xPostsOfDay(posts.length),
-                                style: Theme.of(context).textTheme.titleSmall,
+                            for (final e in dayEvents)
+                              _EventTile(
+                                event: e,
+                                family: family,
+                                onTap: () {
+                                  Navigator.pop(sheetContext);
+                                  _openEditor(family, event: e);
+                                },
                               ),
-                            ),
-                            for (final p in posts) _XPostTile(post: p),
+                            if (posts.isNotEmpty) ...[
+                              const Divider(),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  4,
+                                  20,
+                                  4,
+                                ),
+                                child: Text(
+                                  context.l10n.xPostsOfDay(posts.length),
+                                  style: Theme.of(context).textTheme.titleSmall,
+                                ),
+                              ),
+                              for (final p in posts) _XPostTile(post: p),
+                            ],
+                            if (_oshi.isNotEmpty) ...[
+                              const Divider(),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  4,
+                                  20,
+                                  4,
+                                ),
+                                child: Text(
+                                  context.l10n.oshiPostsOfDay,
+                                  style: Theme.of(context).textTheme.titleSmall,
+                                ),
+                              ),
+                              for (final o in _oshi)
+                                ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                  leading: const Icon(Icons.favorite_outline),
+                                  title: Text(o.label),
+                                  subtitle: Text(context.l10n.viewOnX),
+                                  trailing: const Icon(
+                                    Icons.open_in_new,
+                                    size: 16,
+                                  ),
+                                  onTap: () => launchUrl(
+                                    o.searchUrl(day),
+                                    mode: LaunchMode.externalApplication,
+                                  ),
+                                ),
+                            ],
                           ],
-                          if (_oshi.isNotEmpty) ...[
-                            const Divider(),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-                              child: Text(
-                                context.l10n.oshiPostsOfDay,
-                                style: Theme.of(context).textTheme.titleSmall,
-                              ),
-                            ),
-                            for (final o in _oshi)
-                              ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-                                leading: const Icon(Icons.favorite_outline),
-                                title: Text(o.label),
-                                subtitle: Text(context.l10n.viewOnX),
-                                trailing: const Icon(
-                                  Icons.open_in_new,
-                                  size: 16,
-                                ),
-                                onTap: () => launchUrl(
-                                  o.searchUrl(day),
-                                  mode: LaunchMode.externalApplication,
-                                ),
-                              ),
-                          ],
-                        ],
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -421,33 +509,6 @@ class _CalendarPageState extends State<CalendarPage> {
               ),
             ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: SegmentedButton<CalendarView>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(
-                  value: CalendarView.all,
-                  label: Text(context.l10n.viewAll),
-                ),
-                ButtonSegment(
-                  value: CalendarView.family,
-                  icon: const Icon(Icons.home_outlined, size: 18),
-                  label: Text(context.l10n.family),
-                ),
-                ButtonSegment(
-                  value: CalendarView.work,
-                  icon: const Icon(Icons.work_outline, size: 18),
-                  label: Text(context.l10n.work),
-                ),
-              ],
-              selected: {_view},
-              onSelectionChanged: (s) => setState(() => _view = s.first),
-            ),
-          ),
-        ),
       ),
       floatingActionButton: family == null
           ? null
@@ -465,93 +526,267 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _buildCalendar(Family family) {
-    return StreamBuilder<List<CalendarEvent>>(
-      stream: _eventsStream,
-      builder: (context, snap) {
-        _events = snap.data ?? const <CalendarEvent>[];
-        return Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1000),
-            child: Column(
-              children: [
-                if (snap.hasError)
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Text(context.l10n.eventsLoadFailed('${snap.error}')),
-                  ),
-                Expanded(
-                  child: TableCalendar<CalendarEvent>(
-                    locale: context.localeName,
-                    firstDay: DateTime(2000),
-                    lastDay: DateTime(holidayLastYear, 12, 31),
-                    focusedDay: _focusedDay,
-                    shouldFillViewport: true,
-                    sixWeekMonthsEnforced: true,
-                    startingDayOfWeek: StartingDayOfWeek.sunday,
-                    availableCalendarFormats: const {CalendarFormat.month: ''},
-                    headerStyle: HeaderStyle(
-                      titleCentered: true,
-                      formatButtonVisible: false,
-                      titleTextFormatter: (date, locale) =>
-                          DateFormat.yMMMM(context.localeName).format(date),
-                      titleTextStyle: Theme.of(context).textTheme.titleLarge!,
+    final views = _views(context);
+    final categories = _categories(context, family);
+    final byId = {for (final c in categories) c.id: c};
+    return CategoryScope(
+      categories: byId,
+      child: StreamBuilder<List<CalendarEvent>>(
+        stream: _eventsStream,
+        builder: (context, snap) {
+          _events = snap.data ?? const <CalendarEvent>[];
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              child: Column(
+                children: [
+                  ViewChips(
+                    views: views,
+                    selected: _viewIndex.clamp(0, views.length - 1),
+                    onSelected: (i) => _viewPager.animateToPage(
+                      i,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOut,
                     ),
-                    daysOfWeekHeight: 24,
-                    selectedDayPredicate: (day) => isSameDay(day, _selectedDay),
-                    onDaySelected: (selected, focused) {
-                      final day = DateTime(
-                        selected.year,
-                        selected.month,
-                        selected.day,
-                      );
-                      setState(() {
-                        _selectedDay = day;
-                        _focusedDay = focused;
-                      });
-                      _showDay(family, day);
-                    },
-                    onDayLongPressed: (selected, _) => _openEditor(
-                      family,
-                      day: DateTime(
-                        selected.year,
-                        selected.month,
-                        selected.day,
-                      ),
-                    ),
-                    onPageChanged: _onPageChanged,
-                    calendarBuilders: CalendarBuilders(
-                      dowBuilder: (context, day) => Center(
-                        child: Text(
-                          DateFormat.E(context.localeName).format(day),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color:
-                                _weekdayColor(day) ??
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                    onEdit: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => CalendarSettingsPage(
+                          familyId: widget.familyId,
+                          uid: widget.user.uid,
                         ),
                       ),
-                      prioritizedBuilder: (context, day, focusedDay) {
-                        final d = DateTime(day.year, day.month, day.day);
-                        return DayCell(
-                          day: d,
-                          events: _eventsOn(d),
-                          holiday: localizedHolidayName(context, d),
-                          xCount: _showX ? _xPosts[dayKey(d)]?.length ?? 0 : 0,
-                          family: family,
-                          isToday: isSameDay(d, DateTime.now()),
-                          isSelected: isSameDay(d, _selectedDay),
-                          isOutside: d.month != focusedDay.month,
-                        );
-                      },
+                    ),
+                  ),
+                  if (snap.hasError)
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Text(
+                        context.l10n.eventsLoadFailed('${snap.error}'),
+                      ),
+                    ),
+                  // 左右：表示カレンダーの切り替え ／ 上下：月の移動
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _viewPager,
+                      itemCount: views.length,
+                      onPageChanged: (i) => setState(() => _viewIndex = i),
+                      itemBuilder: (context, i) => MonthPager(
+                        key: ValueKey(views[i].id),
+                        initialPage:
+                            monthPagerCenter +
+                            monthOffset(_thisMonth, _focusedDay),
+                        thisMonth: _thisMonth,
+                        onMonthChanged: _onPageChanged,
+                        buildMonth: (month) =>
+                            _buildMonth(family, month, views[i]),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// 1 か月分のマス（6 週間）。
+  Widget _buildMonth(Family family, DateTime month, CalendarViewDef view) {
+    final days = monthGridDays(month);
+    final today = _today();
+    List<CalendarEvent> eventsOn(DateTime d) =>
+        _events.where((e) => view.shows(e) && e.occursOn(d)).toList()
+          ..sort(_compareEvents);
+    return Column(
+      children: [
+        Row(
+          children: [
+            for (final d in days.take(7))
+              Expanded(
+                child: SizedBox(
+                  height: 24,
+                  child: Center(
+                    child: Text(
+                      DateFormat.E(context.localeName).format(d),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color:
+                            _weekdayColor(d) ??
+                            Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ),
-              ],
+              ),
+          ],
+        ),
+        Expanded(
+          child: Column(
+            children: [
+              for (var w = 0; w < 6; w++)
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final d in days.skip(w * 7).take(7))
+                        Expanded(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              setState(() => _selectedDay = d);
+                              _showDay(family, d);
+                            },
+                            onLongPress: () => _openEditor(family, day: d),
+                            child: DayCell(
+                              day: d,
+                              events: eventsOn(d),
+                              holiday: localizedHolidayName(context, d),
+                              xCount: _showX
+                                  ? _xPosts[dayKey(d)]?.length ?? 0
+                                  : 0,
+                              family: family,
+                              isToday: isSameDay(d, today),
+                              isSelected: isSameDay(d, _selectedDay),
+                              isOutside: d.month != month.month,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 表示カレンダーの切り替えボタンの並び（左右スワイプと連動）と、編集ボタン。
+class ViewChips extends StatelessWidget {
+  const ViewChips({
+    required this.views,
+    required this.selected,
+    required this.onSelected,
+    required this.onEdit,
+  });
+
+  final List<CalendarViewDef> views;
+  final int selected;
+  final ValueChanged<int> onSelected;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: Row(
+        children: [
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              itemCount: views.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              itemBuilder: (context, i) => ChoiceChip(
+                label: Text(views[i].name),
+                selected: i == selected,
+                showCheckmark: false,
+                onSelected: (_) => onSelected(i),
+              ),
             ),
           ),
-        );
-      },
+          IconButton(
+            tooltip: context.l10n.editCalendars,
+            icon: const Icon(Icons.tune),
+            onPressed: onEdit,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 月を縦にスクロールして移動するページ。上に「年月」と「今日」ボタン。
+class MonthPager extends StatefulWidget {
+  const MonthPager({
+    super.key,
+    required this.initialPage,
+    required this.thisMonth,
+    required this.onMonthChanged,
+    required this.buildMonth,
+  });
+
+  final int initialPage;
+  final DateTime thisMonth;
+  final ValueChanged<DateTime> onMonthChanged;
+  final Widget Function(DateTime month) buildMonth;
+
+  @override
+  State<MonthPager> createState() => MonthPagerState();
+}
+
+class MonthPagerState extends State<MonthPager> {
+  late final PageController _controller = PageController(
+    initialPage: widget.initialPage,
+  );
+  late int _page = widget.initialPage;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  DateTime _monthOf(int page) =>
+      monthAt(widget.thisMonth, page - monthPagerCenter);
+
+  @override
+  Widget build(BuildContext context) {
+    final month = _monthOf(_page);
+    return Column(
+      children: [
+        SizedBox(
+          height: 40,
+          child: Row(
+            children: [
+              const SizedBox(width: 48),
+              Expanded(
+                child: Center(
+                  child: Text(
+                    DateFormat.yMMMM(context.localeName).format(month),
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: context.l10n.today,
+                icon: const Icon(Icons.today),
+                onPressed: _page == monthPagerCenter
+                    ? null
+                    : () => _controller.animateToPage(
+                        monthPagerCenter,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: PageView.builder(
+            controller: _controller,
+            scrollDirection: Axis.vertical,
+            itemCount: monthPagerCenter * 2,
+            onPageChanged: (p) {
+              setState(() => _page = p);
+              widget.onMonthChanged(_monthOf(p));
+            },
+            itemBuilder: (context, p) => widget.buildMonth(_monthOf(p)),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -718,7 +953,7 @@ class _EventChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = eventColor(family, event);
+    final color = eventColor(family, event, CategoryScope.of(context));
     final isFirstDay = isSameDay(event.start, day);
     final nextDay = DateTime(day.year, day.month, day.day + 1);
     final isLastDay = !event.end.isAfter(nextDay);
@@ -789,7 +1024,7 @@ class _EventTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = eventColor(family, event);
+    final color = eventColor(family, event, CategoryScope.of(context));
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -817,9 +1052,8 @@ class _EventTile extends StatelessWidget {
                   Text(
                     [
                       _timeText(context),
-                      if (event.kind == CalendarKind.work)
-                        context.l10n.work
-                      else
+                      ?CategoryScope.of(context)[categoryOf(event)]?.name,
+                      if (event.kind == CalendarKind.family)
                         ownerName(context, family, event.owner),
                       if (event.isRoutine) context.l10n.routineLabel,
                     ].join('   '),

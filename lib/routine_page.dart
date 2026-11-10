@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'calendar_page.dart' show eventColor;
+import 'calendar_settings_page.dart';
+import 'categories.dart';
 import 'family_settings_page.dart';
 import 'l10n.dart';
 import 'models.dart';
@@ -165,6 +167,9 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
   late final _title = TextEditingController(text: widget.routine?.title ?? '');
   late final _note = TextEditingController(text: widget.routine?.note ?? '');
   late CalendarKind _kind = widget.routine?.kind ?? CalendarKind.family;
+  late String _categoryId =
+      widget.routine?.categoryId ??
+      (_kind == CalendarKind.work ? Category.workId : Category.familyId);
   late Set<int> _weekdays = {...?widget.routine?.weekdays};
   late bool _allDay = widget.routine?.allDay ?? false;
   late int _start = widget.routine?.startMinutes ?? 9 * 60;
@@ -237,6 +242,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
           skipHolidays: _skipHolidays,
           skipDates: _skipDates,
           kind: _kind,
+          categoryId: _categoryId,
         ),
       );
       if (mounted) Navigator.pop(context);
@@ -302,25 +308,22 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              if (_isNew) ...[
-                SegmentedButton<CalendarKind>(
-                  segments: [
-                    ButtonSegment(
-                      value: CalendarKind.family,
-                      icon: const Icon(Icons.home_outlined),
-                      label: Text(l10n.family),
-                    ),
-                    ButtonSegment(
-                      value: CalendarKind.work,
-                      icon: const Icon(Icons.work_outline),
-                      label: Text(l10n.work),
-                    ),
-                  ],
-                  selected: {_kind},
-                  onSelectionChanged: (s) => setState(() => _kind = s.first),
-                ),
-                const SizedBox(height: 16),
-              ],
+              Text(
+                l10n.categoryLabel,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              const SizedBox(height: 8),
+              CategoryPicker(
+                familyId: widget.place.familyId,
+                uid: widget.place.uid,
+                selectedId: _categoryId,
+                onlyKind: _isNew ? null : _kind,
+                onChanged: (c) => setState(() {
+                  _categoryId = c.id;
+                  _kind = c.kind;
+                }),
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: _title,
                 autofocus: _isNew,

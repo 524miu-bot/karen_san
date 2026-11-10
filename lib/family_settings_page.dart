@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'account_deletion.dart';
 import 'app_lock.dart';
+import 'calendar_settings_page.dart';
 import 'color_picker.dart';
 import 'l10n.dart';
 import 'models.dart';
@@ -260,6 +261,24 @@ class FamilySettingsPage extends StatelessWidget {
                           leading: const CircleAvatar(child: Icon(Icons.add)),
                           title: Text(context.l10n.addPerson),
                           onTap: () => addPersonFlow(context, f),
+                        ),
+                        const Divider(),
+                        _header(context, context.l10n.calendarSettingsTitle),
+                        ListTile(
+                          leading: const CircleAvatar(
+                            child: Icon(Icons.calendar_view_month_outlined),
+                          ),
+                          title: Text(context.l10n.editCalendars),
+                          subtitle: Text(context.l10n.categoriesHelp),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CalendarSettingsPage(
+                                familyId: familyId,
+                                uid: uid,
+                              ),
+                            ),
+                          ),
                         ),
                         const Divider(),
                         _header(context, context.l10n.xDiarySection),

@@ -595,4 +595,86 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tabSettings => 'Settings';
+
+  @override
+  String get editCalendars => 'Calendars & categories';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get addCategory => 'Add category';
+
+  @override
+  String get editCategory => 'Edit category';
+
+  @override
+  String get categoryName => 'Category name';
+
+  @override
+  String get categoryNameHint => 'e.g. Basketball, Karate';
+
+  @override
+  String get categoryShared => 'Shared with family';
+
+  @override
+  String get categoryPrivate => 'Only me';
+
+  @override
+  String get categorySharedHelp =>
+      'Everyone in the group can see these events (good for kids\' activities).';
+
+  @override
+  String get categoryPrivateHelp =>
+      'Only you can see these events (like work).';
+
+  @override
+  String deleteCategoryTitle(String name) {
+    return 'Delete \"$name\"?';
+  }
+
+  @override
+  String get deleteCategoryBody =>
+      'Events in this category are not deleted. They will show as Family or Work.';
+
+  @override
+  String get calendarSettingsTitle => 'Calendars & categories';
+
+  @override
+  String get viewsSection => 'Calendars to show';
+
+  @override
+  String get viewsHelp =>
+      'Make calendars that combine categories, like \"Basketball + Karate\" or \"Karate + Family\". Swipe left and right on the calendar to switch. These are your own settings.';
+
+  @override
+  String get viewAllHelp => 'Every category';
+
+  @override
+  String get moveUp => 'Move up';
+
+  @override
+  String get addView => 'Add calendar';
+
+  @override
+  String get editView => 'Edit calendar';
+
+  @override
+  String get categoriesSection => 'Categories';
+
+  @override
+  String get categoriesHelp =>
+      'Choose a category for each event. Add your own, like Basketball or Karate.';
+
+  @override
+  String get viewNeedsCategory => 'Choose at least one category.';
+
+  @override
+  String get viewPickCategories => 'Categories to show in this calendar';
+
+  @override
+  String get viewName => 'Calendar name';
+
+  @override
+  String get categoryLabel => 'Category';
 }

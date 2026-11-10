@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'calendar_settings_page.dart';
+import 'categories.dart';
 import 'family_settings_page.dart';
 import 'l10n.dart';
 import 'models.dart';
@@ -14,6 +16,7 @@ class EventEditorPage extends StatefulWidget {
     required this.family,
     required this.initialDay,
     this.event,
+    this.initialCategoryId = Category.familyId,
     this.initialKind = CalendarKind.family,
   });
 
@@ -21,7 +24,8 @@ class EventEditorPage extends StatefulWidget {
   final DateTime initialDay;
   final CalendarEvent? event;
 
-  /// 新しい予定のときに最初に選んでおくカレンダー（家庭か仕事か）。
+  /// 新しい予定のときに最初に選んでおく種類と、その保存場所（共有か自分だけか）。
+  final String initialCategoryId;
   final CalendarKind initialKind;
 
   @override
@@ -47,6 +51,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
   bool get _isNew => widget.event == null;
 
   late CalendarKind _kind = widget.event?.kind ?? widget.initialKind;
+  late String _categoryId = widget.event != null
+      ? categoryOf(widget.event!)
+      : widget.initialCategoryId;
 
   late final Place _place = Place(familyId: widget.family.id, uid: _uid);
 
@@ -141,6 +148,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
       // 仕事の予定は本人だけのものなので、誰の予定かは持たない
       ownerId: _kind == CalendarKind.work ? '' : _ownerId,
       kind: _kind,
+      categoryId: _categoryId,
     );
     setState(() {
       _busy = true;
@@ -211,26 +219,24 @@ class _EventEditorPageState extends State<EventEditorPage> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // 家庭と仕事は保存場所が違うので、選べるのは新しく作るときだけ
-              if (_isNew) ...[
-                SegmentedButton<CalendarKind>(
-                  segments: [
-                    ButtonSegment(
-                      value: CalendarKind.family,
-                      icon: const Icon(Icons.home_outlined),
-                      label: Text(context.l10n.family),
-                    ),
-                    ButtonSegment(
-                      value: CalendarKind.work,
-                      icon: const Icon(Icons.work_outline),
-                      label: Text(context.l10n.work),
-                    ),
-                  ],
-                  selected: {_kind},
-                  onSelectionChanged: (s) => setState(() => _kind = s.first),
-                ),
-                const SizedBox(height: 16),
-              ] else if (_kind == CalendarKind.work)
+              Text(
+                context.l10n.categoryLabel,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              const SizedBox(height: 8),
+              // 共有と自分だけは保存場所が違うので、作ったあとは同じ側の種類だけ選べる
+              CategoryPicker(
+                familyId: widget.family.id,
+                uid: _uid,
+                selectedId: _categoryId,
+                onlyKind: _isNew ? null : _kind,
+                onChanged: (c) => setState(() {
+                  _categoryId = c.id;
+                  _kind = c.kind;
+                }),
+              ),
+              const SizedBox(height: 16),
+              if (_kind == CalendarKind.work)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Row(
