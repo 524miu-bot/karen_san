@@ -83,9 +83,11 @@
 	<!-- 標準の暗号化（HTTPS）だけを使うので、輸出規制の申告は不要 -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<!-- ファイル選択の部品が写真ライブラリの機能を含むため、説明文が必要 -->
+	<!-- 予定表の写真を読み取るときに使う -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>X のアーカイブなどのファイルを選ぶときに使います。</string>
+	<string>予定表やプリントの写真を選んで、予定を読み取るときに使います。</string>
+	<key>NSCameraUsageDescription</key>
+	<string>予定表やプリントを撮影して、予定を読み取るときに使います。</string>
 	<!-- アプリが対応している言語（App Store の表示と、端末の言語に合わせた表示に必要） -->
 	<key>CFBundleLocalizations</key>
 	<array>

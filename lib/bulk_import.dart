@@ -1,5 +1,10 @@
+import 'dart:convert';
+
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import 'calendar_settings_page.dart';
@@ -91,13 +96,70 @@ List<DraftEvent> parseBulkEvents(String text, {List<int>? errors}) {
   return result;
 }
 
-/// 予定をまとめて追加する画面。貼り付けた予定を確認してから登録する。
-/// （プリントの AI 読み取りを付けるときも、この確認画面を使う）
+/// AI（サーバーの readSchedule）が返した予定を、確認画面の形にする。おかしなものは飛ばす。
+List<DraftEvent> draftsFromAi(List<dynamic> events) {
+  final result = <DraftEvent>[];
+  final time = RegExp(r'^(\d{1,2}):(\d{2})$');
+  for (final raw in events) {
+    if (raw is! Map) continue;
+    final day = DateTime.tryParse('${raw['date']}');
+    final title = '${raw['title'] ?? ''}'.trim();
+    if (day == null || title.isEmpty) continue;
+    final d = DateTime(day.year, day.month, day.day);
+    final s = time.firstMatch('${raw['start'] ?? ''}');
+    final e = time.firstMatch('${raw['end'] ?? ''}');
+    var start = d;
+    var end = DateTime(d.year, d.month, d.day + 1);
+    var allDay = true;
+    if (raw['allDay'] != true && s != null && e != null) {
+      start = d.add(
+        Duration(hours: int.parse(s[1]!), minutes: int.parse(s[2]!)),
+      );
+      end = d.add(Duration(hours: int.parse(e[1]!), minutes: int.parse(e[2]!)));
+      // 終わりが前なら 1 時間にしておく（登録後に直せる）
+      if (!end.isAfter(start)) end = start.add(const Duration(hours: 1));
+      allDay = false;
+    }
+    result.add(
+      DraftEvent(
+        start: start,
+        end: end,
+        allDay: allDay,
+        title: title,
+        location: '${raw['location'] ?? ''}'.trim(),
+        note: '${raw['note'] ?? ''}'.trim(),
+      ),
+    );
+  }
+  return result;
+}
+
+/// ファイル名から種類を決める（写真の部品が種類を教えてくれないとき）。
+String scheduleMimeOf(String name, [String? given]) {
+  if (given != null && given.isNotEmpty) return given;
+  final n = name.toLowerCase();
+  if (n.endsWith('.png')) return 'image/png';
+  if (n.endsWith('.webp')) return 'image/webp';
+  if (n.endsWith('.gif')) return 'image/gif';
+  if (n.endsWith('.pdf')) return 'application/pdf';
+  return 'image/jpeg';
+}
+
+/// 予定をまとめて追加する画面。写真・PDF を AI で読み取るか、文字を貼り付けて、
+/// 確認してから登録する。
 class BulkImportPage extends StatefulWidget {
-  const BulkImportPage({super.key, required this.family, required this.place});
+  const BulkImportPage({
+    super.key,
+    required this.family,
+    required this.place,
+    this.startWithCamera = false,
+  });
 
   final Family family;
   final Place place;
+
+  /// 開いたらすぐカメラを起動する（カレンダーのカメラボタンから）。
+  final bool startWithCamera;
 
   @override
   State<BulkImportPage> createState() => _BulkImportPageState();
@@ -114,10 +176,96 @@ class _BulkImportPageState extends State<BulkImportPage> {
   bool _busy = false;
   String? _status;
 
+  final _hint = TextEditingController();
+  String? _aiComment;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.startWithCamera) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _pickAndRead(ImageSource.camera),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _text.dispose();
+    _hint.dispose();
     super.dispose();
+  }
+
+  /// 写真を撮る・選ぶ（source が null なら PDF などのファイルを選ぶ）。
+  Future<void> _pickAndRead(ImageSource? source) async {
+    List<int> bytes;
+    String mime;
+    try {
+      if (source != null) {
+        final x = await ImagePicker().pickImage(
+          source: source,
+          maxWidth: 2400,
+          maxHeight: 2400,
+          imageQuality: 85,
+        );
+        if (x == null) return;
+        bytes = await x.readAsBytes();
+        mime = scheduleMimeOf(x.name, x.mimeType);
+      } else {
+        final f = await FilePicker.pickFile(
+          type: FileType.custom,
+          allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+        );
+        if (f == null) return;
+        bytes = await f.readAsBytes();
+        mime = scheduleMimeOf(f.name);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _status = '$e');
+      return;
+    }
+    await _readWithAi(bytes, mime);
+  }
+
+  Future<void> _readWithAi(List<int> bytes, String mime) async {
+    final l10n = context.l10n;
+    setState(() {
+      _busy = true;
+      _status = l10n.aiReading;
+      _aiComment = null;
+      _drafts = null;
+    });
+    try {
+      final res = await FirebaseFunctions.instanceFor(region: 'asia-northeast1')
+          .httpsCallable(
+            'readSchedule',
+            options: HttpsCallableOptions(timeout: const Duration(minutes: 5)),
+          )
+          .call<Map<String, dynamic>>({
+            'mimeType': mime,
+            'data': base64Encode(bytes),
+            'today': DateFormat('yyyy-MM-dd').format(DateTime.now()),
+            'hint': _hint.text.trim(),
+          });
+      final drafts = draftsFromAi(res.data['events'] as List? ?? const []);
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _drafts = drafts;
+        _selected = {for (var i = 0; i < drafts.length; i++) i};
+        _errors = [];
+        _aiComment = '${res.data['comment'] ?? ''}'.trim();
+        _status = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _status = e is FirebaseFunctionsException && e.message != null
+            ? e.message
+            : l10n.aiFailed;
+      });
+    }
   }
 
   void _read() {
@@ -193,6 +341,68 @@ class _BulkImportPageState extends State<BulkImportPage> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              Text(
+                l10n.aiTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(l10n.aiHelp),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _hint,
+                minLines: 1,
+                maxLines: 3,
+                maxLength: 500,
+                decoration: InputDecoration(
+                  labelText: l10n.aiHintLabel,
+                  hintText: l10n.aiHintExample,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    onPressed: _busy
+                        ? null
+                        : () => _pickAndRead(ImageSource.camera),
+                    icon: const Icon(Icons.photo_camera),
+                    label: Text(l10n.aiCamera),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _busy
+                        ? null
+                        : () => _pickAndRead(ImageSource.gallery),
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: Text(l10n.aiGallery),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _busy ? null : () => _pickAndRead(null),
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    label: Text(l10n.aiFile),
+                  ),
+                ],
+              ),
+              if (drafts == null && _busy) ...[
+                const SizedBox(height: 12),
+                const LinearProgressIndicator(),
+              ],
+              if (drafts == null && _status != null) ...[
+                const SizedBox(height: 8),
+                Text(_status!),
+              ],
+              if (_aiComment != null && _aiComment!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.info_outline),
+                    title: Text(l10n.aiComment),
+                    subtitle: Text(_aiComment!),
+                  ),
+                ),
+              ],
+              const Divider(height: 32),
               Text(l10n.bulkHelp),
               const SizedBox(height: 12),
               TextField(
@@ -310,11 +520,11 @@ class _BulkImportPageState extends State<BulkImportPage> {
                   padding: const EdgeInsets.only(top: 12),
                   child: Text(l10n.bulkNothing),
                 ),
-              if (_busy) ...[
+              if (drafts != null && _busy) ...[
                 const SizedBox(height: 12),
                 const LinearProgressIndicator(),
               ],
-              if (_status != null) ...[
+              if (drafts != null && _status != null) ...[
                 const SizedBox(height: 12),
                 Text(_status!),
               ],

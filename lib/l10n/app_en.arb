@@ -415,5 +415,15 @@
         "type": "String"
       }
     }
-  }
+  },
+  "aiTitle": "Read from a photo or PDF (AI)",
+  "aiHelp": "Take a photo of a schedule or school notice and AI will read the events. You can check them before adding.",
+  "aiHintLabel": "Instructions for the AI (optional)",
+  "aiHintExample": "e.g. Only the boys' team / only my row. Early shift is 7:55–16:45",
+  "aiCamera": "Take a photo",
+  "aiGallery": "Choose a photo",
+  "aiFile": "Choose a PDF",
+  "aiReading": "AI is reading it (30 seconds to a minute)…",
+  "aiFailed": "Couldn't read it. Please retake the photo or try again later.",
+  "aiComment": "Note from the AI"
 }

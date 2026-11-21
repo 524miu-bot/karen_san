@@ -86,3 +86,56 @@ exports.deleteAccount = onCall({region: "asia-northeast1"}, async (request) => {
   }
   return {ok: true};
 });
+
+// 写真・PDF の予定表を AI（Claude）で読み取る。
+// Anthropic の API キーは Secret Manager に保存する（firebase functions:secrets:set ANTHROPIC_API_KEY）
+const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
+// 使うモデル（functions/.env の AI_MODEL で変えられる）
+const AI_MODEL = defineString("AI_MODEL", {default: "claude-opus-5-5"});
+const aiImport = require("./ai_import");
+
+exports.readSchedule = onCall(
+    {
+      region: "asia-northeast1",
+      secrets: [ANTHROPIC_API_KEY],
+      timeoutSeconds: 300,
+      memory: "512MiB",
+    },
+    async (request) => {
+      const uid = request.auth && request.auth.uid;
+      if (!uid) throw new HttpsError("unauthenticated", "ログインが必要です");
+      const {mimeType, data, today, hint} = request.data || {};
+      const day = /^\d{4}-\d{2}-\d{2}$/.test(today || "") ?
+        today : new Date().toISOString().slice(0, 10);
+      try {
+        aiImport.fileBlock({mimeType, data});
+      } catch (e) {
+        throw new HttpsError("invalid-argument", e.message);
+      }
+      const ok = await aiImport.takeQuota(getFirestore(), uid, day);
+      if (!ok) {
+        throw new HttpsError("resource-exhausted",
+            `AI の読み取りは 1 日 ${aiImport.DAILY_LIMIT} 回までです。明日またお試しください。`);
+      }
+      const Anthropic = require("@anthropic-ai/sdk");
+      const client = new Anthropic({apiKey: ANTHROPIC_API_KEY.value()});
+      try {
+        const {result, usage} = await aiImport.readSchedule({
+          client,
+          model: AI_MODEL.value(),
+          mimeType,
+          data,
+          today: day,
+          hint: String(hint || "").slice(0, 1000),
+        });
+        logger.info("予定表を読み取り", {
+          uid, count: result.events.length,
+          input: usage.input_tokens, output: usage.output_tokens,
+        });
+        return result;
+      } catch (e) {
+        logger.error("予定表の読み取りに失敗", {uid, message: e.message});
+        throw new HttpsError("internal", "読み取れませんでした。写真を撮り直すか、時間をおいてお試しください。");
+      }
+    },
+);

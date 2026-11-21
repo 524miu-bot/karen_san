@@ -1471,6 +1471,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Added {count} events, then stopped: {error}'**
   String bulkSaveFailed(int count, String error);
+
+  /// No description provided for @aiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read from a photo or PDF (AI)'**
+  String get aiTitle;
+
+  /// No description provided for @aiHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo of a schedule or school notice and AI will read the events. You can check them before adding.'**
+  String get aiHelp;
+
+  /// No description provided for @aiHintLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions for the AI (optional)'**
+  String get aiHintLabel;
+
+  /// No description provided for @aiHintExample.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Only the boys\' team / only my row. Early shift is 7:55–16:45'**
+  String get aiHintExample;
+
+  /// No description provided for @aiCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo'**
+  String get aiCamera;
+
+  /// No description provided for @aiGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a photo'**
+  String get aiGallery;
+
+  /// No description provided for @aiFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a PDF'**
+  String get aiFile;
+
+  /// No description provided for @aiReading.
+  ///
+  /// In en, this message translates to:
+  /// **'AI is reading it (30 seconds to a minute)…'**
+  String get aiReading;
+
+  /// No description provided for @aiFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read it. Please retake the photo or try again later.'**
+  String get aiFailed;
+
+  /// No description provided for @aiComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Note from the AI'**
+  String get aiComment;
 }
 
 class _AppLocalizationsDelegate

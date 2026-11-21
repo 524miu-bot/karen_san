@@ -228,5 +228,15 @@
   "bulkPreview": "{count} 件の予定があります。登録しないものはチェックを外してください。",
   "bulkSave": "{count} 件を登録する",
   "bulkSaved": "{count} 件の予定をカレンダーに登録しました。",
-  "bulkSaveFailed": "{count} 件登録したところで止まりました：{error}"
+  "bulkSaveFailed": "{count} 件登録したところで止まりました：{error}",
+  "aiTitle": "写真・PDF から読み取る（AI）",
+  "aiHelp": "予定表やプリントを撮ると、AI が予定を読み取ります。登録する前に内容を確認できます。",
+  "aiHintLabel": "読み取りのお願い（なくても大丈夫）",
+  "aiHintExample": "例：男子の予定だけ／小西の欄だけ。早番は 7:55〜16:45",
+  "aiCamera": "写真を撮る",
+  "aiGallery": "写真を選ぶ",
+  "aiFile": "PDF を選ぶ",
+  "aiReading": "AI が読み取っています（30 秒〜1 分ほど）…",
+  "aiFailed": "読み取れませんでした。写真を撮り直すか、時間をおいてお試しください。",
+  "aiComment": "AI からのひとこと"
 }

@@ -497,6 +497,20 @@ class _CalendarPageState extends State<CalendarPage> {
         actions: [
           if (family != null)
             IconButton(
+              tooltip: context.l10n.aiCamera,
+              icon: const Icon(Icons.photo_camera_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => BulkImportPage(
+                    family: family,
+                    place: _place,
+                    startWithCamera: true,
+                  ),
+                ),
+              ),
+            ),
+          if (family != null)
+            IconButton(
               tooltip: context.l10n.bulkTitle,
               icon: const Icon(Icons.playlist_add),
               onPressed: () => Navigator.of(context).push(

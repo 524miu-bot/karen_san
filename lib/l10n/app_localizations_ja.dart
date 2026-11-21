@@ -756,4 +756,34 @@ class AppLocalizationsJa extends AppLocalizations {
   String bulkSaveFailed(int count, String error) {
     return '$count 件登録したところで止まりました：$error';
   }
+
+  @override
+  String get aiTitle => '写真・PDF から読み取る（AI）';
+
+  @override
+  String get aiHelp => '予定表やプリントを撮ると、AI が予定を読み取ります。登録する前に内容を確認できます。';
+
+  @override
+  String get aiHintLabel => '読み取りのお願い（なくても大丈夫）';
+
+  @override
+  String get aiHintExample => '例：男子の予定だけ／小西の欄だけ。早番は 7:55〜16:45';
+
+  @override
+  String get aiCamera => '写真を撮る';
+
+  @override
+  String get aiGallery => '写真を選ぶ';
+
+  @override
+  String get aiFile => 'PDF を選ぶ';
+
+  @override
+  String get aiReading => 'AI が読み取っています（30 秒〜1 分ほど）…';
+
+  @override
+  String get aiFailed => '読み取れませんでした。写真を撮り直すか、時間をおいてお試しください。';
+
+  @override
+  String get aiComment => 'AI からのひとこと';
 }

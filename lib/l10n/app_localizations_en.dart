@@ -776,4 +776,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String bulkSaveFailed(int count, String error) {
     return 'Added $count events, then stopped: $error';
   }
+
+  @override
+  String get aiTitle => 'Read from a photo or PDF (AI)';
+
+  @override
+  String get aiHelp =>
+      'Take a photo of a schedule or school notice and AI will read the events. You can check them before adding.';
+
+  @override
+  String get aiHintLabel => 'Instructions for the AI (optional)';
+
+  @override
+  String get aiHintExample =>
+      'e.g. Only the boys\' team / only my row. Early shift is 7:55–16:45';
+
+  @override
+  String get aiCamera => 'Take a photo';
+
+  @override
+  String get aiGallery => 'Choose a photo';
+
+  @override
+  String get aiFile => 'Choose a PDF';
+
+  @override
+  String get aiReading => 'AI is reading it (30 seconds to a minute)…';
+
+  @override
+  String get aiFailed =>
+      'Couldn\'t read it. Please retake the photo or try again later.';
+
+  @override
+  String get aiComment => 'Note from the AI';
 }
