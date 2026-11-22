@@ -455,5 +455,14 @@
         "type": "int"
       }
     }
+  },
+  "bulkTarget": "Which calendar?",
+  "bulkTargetSummary": "Adding to: {target}",
+  "@bulkTargetSummary": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
   }
 }

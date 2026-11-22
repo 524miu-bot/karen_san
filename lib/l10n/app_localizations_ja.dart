@@ -810,4 +810,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aiPreciseUsedUp => '今月の「正確に読む」を使い切りました。オフにすると、普通の読み取りが使えます。';
+
+  @override
+  String get bulkTarget => 'どのカレンダーに入れる？';
+
+  @override
+  String bulkTargetSummary(String target) {
+    return '入れる先：$target';
+  }
 }

@@ -1567,6 +1567,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ve used all precise reads this month. Turn it off to use a normal read.'**
   String get aiPreciseUsedUp;
+
+  /// No description provided for @bulkTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Which calendar?'**
+  String get bulkTarget;
+
+  /// No description provided for @bulkTargetSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding to: {target}'**
+  String bulkTargetSummary(String target);
 }
 
 class _AppLocalizationsDelegate

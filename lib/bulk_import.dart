@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'calendar_settings_page.dart';
 import 'categories.dart';
@@ -239,11 +240,12 @@ class _BulkImportPageState extends State<BulkImportPage> {
   void initState() {
     super.initState();
     _loadQuota();
-    if (widget.startWithCamera) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _pickAndRead(ImageSource.camera),
-      );
-    }
+    // 入れる先を前に選んだことがあれば、すぐカメラを開く。初めてなら先に選んでもらう。
+    _loadTarget().then((chosen) {
+      if (chosen && widget.startWithCamera && mounted) {
+        _pickAndRead(ImageSource.camera);
+      }
+    });
   }
 
   @override
@@ -417,6 +419,136 @@ class _BulkImportPageState extends State<BulkImportPage> {
     return '$day  ${hm.format(d.start)}${context.l10n.rangeSeparator}${hm.format(d.end)}';
   }
 
+  /// どのカレンダー（種類）と、誰の予定として入れるか。写真を撮る前に選ぶ。
+  List<Widget> _targetWidgets(BuildContext context) {
+    final l10n = context.l10n;
+    return [
+      Text(l10n.bulkTarget, style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 8),
+      CategoryPicker(
+        familyId: widget.place.familyId,
+        uid: widget.place.uid,
+        selectedId: _categoryId,
+        onChanged: (c) {
+          setState(() {
+            _categoryId = c.id;
+            _kind = c.kind;
+          });
+          _saveTarget();
+        },
+      ),
+      if (_kind == CalendarKind.family) ...[
+        const SizedBox(height: 16),
+        Text(l10n.whoseEvent, style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 8),
+        StreamBuilder<Family>(
+          stream: Repository.instance.watchFamily(widget.family.id),
+          initialData: widget.family,
+          builder: (context, snap) {
+            final f = snap.data!;
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final id in f.ownerIds)
+                  ChoiceChip(
+                    avatar: CircleAvatar(backgroundColor: f.colorOf(id)),
+                    label: Text(ownerName(context, f, id)),
+                    selected: _ownerId == id,
+                    showCheckmark: false,
+                    onSelected: (_) {
+                      setState(() => _ownerId = id);
+                      _saveTarget();
+                    },
+                  ),
+                ActionChip(
+                  avatar: const Icon(Icons.add, size: 18),
+                  label: Text(l10n.addPerson),
+                  onPressed: () async {
+                    final id = await addPersonFlow(context, f);
+                    if (id != null && mounted) {
+                      setState(() => _ownerId = id);
+                      _saveTarget();
+                    }
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    ];
+  }
+
+  Stream<({List<Category> categories, List<CalendarViewDef>? views})>?
+  _categories;
+
+  /// 登録ボタンの上に出す「入れる先」のまとめ。
+  Widget _targetSummary(BuildContext context) {
+    final l10n = context.l10n;
+    _categories ??= watchAllCategories(
+      context,
+      widget.place.familyId,
+      widget.place.uid,
+    );
+    return StreamBuilder(
+      stream: _categories,
+      builder: (context, snap) {
+        final name = (snap.data?.categories ?? const <Category>[])
+            .where((c) => c.id == _categoryId)
+            .map((c) => c.name)
+            .firstOrNull;
+        final parts = [
+          ?name,
+          if (_kind == CalendarKind.family)
+            ownerName(context, widget.family, _ownerId),
+        ];
+        return Row(
+          children: [
+            const Icon(Icons.event_note_outlined, size: 18),
+            const SizedBox(width: 6),
+            Expanded(child: Text(l10n.bulkTargetSummary(parts.join(' ・ ')))),
+          ],
+        );
+      },
+    );
+  }
+
+  static const _prefCategory = 'bulk_target_category';
+  static const _prefKind = 'bulk_target_kind';
+  static const _prefOwner = 'bulk_target_owner';
+
+  /// 前回選んだ入れる先を思い出す。選んだことがあれば true。
+  Future<bool> _loadTarget() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final id = prefs.getString(_prefCategory);
+      if (id == null) return false;
+      final kind = CalendarKind.values.asNameMap()[prefs.getString(_prefKind)];
+      final owner = prefs.getString(_prefOwner);
+      if (!mounted) return false;
+      setState(() {
+        _categoryId = id;
+        if (kind != null) _kind = kind;
+        if (owner != null && widget.family.ownerIds.contains(owner)) {
+          _ownerId = owner;
+        }
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _saveTarget() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefCategory, _categoryId);
+      await prefs.setString(_prefKind, _kind.name);
+      await prefs.setString(_prefOwner, _ownerId);
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -429,6 +561,8 @@ class _BulkImportPageState extends State<BulkImportPage> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              ..._targetWidgets(context),
+              const Divider(height: 32),
               Text(
                 l10n.aiTitle,
                 style: Theme.of(context).textTheme.titleMedium,
@@ -544,61 +678,7 @@ class _BulkImportPageState extends State<BulkImportPage> {
                     ),
                   ),
                 const SizedBox(height: 16),
-                Text(
-                  l10n.categoryLabel,
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-                const SizedBox(height: 8),
-                CategoryPicker(
-                  familyId: widget.place.familyId,
-                  uid: widget.place.uid,
-                  selectedId: _categoryId,
-                  onChanged: (c) => setState(() {
-                    _categoryId = c.id;
-                    _kind = c.kind;
-                  }),
-                ),
-                if (_kind == CalendarKind.family) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    l10n.whoseEvent,
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  StreamBuilder<Family>(
-                    stream: Repository.instance.watchFamily(widget.family.id),
-                    initialData: widget.family,
-                    builder: (context, snap) {
-                      final f = snap.data!;
-                      return Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final id in f.ownerIds)
-                            ChoiceChip(
-                              avatar: CircleAvatar(
-                                backgroundColor: f.colorOf(id),
-                              ),
-                              label: Text(ownerName(context, f, id)),
-                              selected: _ownerId == id,
-                              showCheckmark: false,
-                              onSelected: (_) => setState(() => _ownerId = id),
-                            ),
-                          ActionChip(
-                            avatar: const Icon(Icons.add, size: 18),
-                            label: Text(l10n.addPerson),
-                            onPressed: () async {
-                              final id = await addPersonFlow(context, f);
-                              if (id != null && mounted) {
-                                setState(() => _ownerId = id);
-                              }
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+                _targetSummary(context),
                 const SizedBox(height: 20),
                 FilledButton.icon(
                   onPressed: _busy || _selected.isEmpty ? null : _save,

@@ -244,5 +244,7 @@
   "aiPrecise": "正確に読む",
   "aiPreciseHelp": "手書きの訂正が多い表や、細かい勤務表に。今月あと {left} 回",
   "aiUsedUp": "今月の無料の読み取りを使い切りました。来月になると、また使えます。",
-  "aiPreciseUsedUp": "今月の「正確に読む」を使い切りました。オフにすると、普通の読み取りが使えます。"
+  "aiPreciseUsedUp": "今月の「正確に読む」を使い切りました。オフにすると、普通の読み取りが使えます。",
+  "bulkTarget": "どのカレンダーに入れる？",
+  "bulkTargetSummary": "入れる先：{target}"
 }

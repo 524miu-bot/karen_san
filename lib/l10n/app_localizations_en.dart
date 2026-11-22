@@ -835,4 +835,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aiPreciseUsedUp =>
       'You\'ve used all precise reads this month. Turn it off to use a normal read.';
+
+  @override
+  String get bulkTarget => 'Which calendar?';
+
+  @override
+  String bulkTargetSummary(String target) {
+    return 'Adding to: $target';
+  }
 }
