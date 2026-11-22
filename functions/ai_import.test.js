@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const {buildPrompt, fileBlock, cleanEvents, takeQuota, readSchedule} =
-  require("./ai_import");
+const {buildPrompt, fileBlock, cleanEvents, takeQuota, refundQuota, quotaOf,
+  monthKey, readSchedule} = require("./ai_import");
 
 test("指示文に今日の日付と使う人の指示が入る", () => {
   const p = buildPrompt({today: "2026-11-21", hint: "小西の欄だけ"});
@@ -52,12 +52,42 @@ function fakeDb() {
   };
 }
 
-test("1 日の回数を超えたら断り、日が変われば戻る", async () => {
+test("無料は月 5 回、来月になると戻る", async () => {
   const db = fakeDb();
-  assert.equal(await takeQuota(db, "u", "2026-11-21", 2), true);
-  assert.equal(await takeQuota(db, "u", "2026-11-21", 2), true);
-  assert.equal(await takeQuota(db, "u", "2026-11-21", 2), false);
-  assert.equal(await takeQuota(db, "u", "2026-11-22", 2), true);
+  for (let i = 1; i <= 5; i++) {
+    const q = await takeQuota(db, "u", "free", "normal", "2026-11");
+    assert.equal(q.normalUsed, i);
+  }
+  assert.equal(await takeQuota(db, "u", "free", "normal", "2026-11"), null);
+  const dec = await takeQuota(db, "u", "free", "normal", "2026-12");
+  assert.equal(dec.normalUsed, 1);
+  assert.equal(dec.normalLimit, 5);
+});
+
+test("「正確に読む」は有料版だけ。普通の回数とは別に数える", async () => {
+  const db = fakeDb();
+  assert.equal(await takeQuota(db, "u", "free", "precise", "2026-11"), null);
+  const q = await takeQuota(db, "u", "premium", "precise", "2026-11");
+  assert.equal(q.preciseUsed, 1);
+  assert.equal(q.preciseLimit, 10);
+  assert.equal(q.normalUsed, 0);
+  assert.equal(q.normalLimit, 200);
+});
+
+test("失敗したら 1 回戻し、動画のおまけの回数は上限に足す", async () => {
+  const db = fakeDb();
+  await takeQuota(db, "u", "free", "normal", "2026-11");
+  await refundQuota(db, "u", "free", "normal", "2026-11");
+  assert.equal(db.store.u.normal, 0);
+  db.store.u.bonus = 2;
+  assert.equal(quotaOf(db.store.u, "free", "2026-11").normalLimit, 7);
+  assert.equal(quotaOf(db.store.u, "free", "2026-12").normalLimit, 5);
+});
+
+test("月は日本時間で数える", () => {
+  // 11/30 15:00 UTC は日本時間 12/1 0:00
+  assert.equal(monthKey(new Date("2026-11-30T15:00:00Z")), "2026-12");
+  assert.equal(monthKey(new Date("2026-11-30T14:59:00Z")), "2026-11");
 });
 
 test("Claude の返した JSON を予定の一覧にする", async () => {

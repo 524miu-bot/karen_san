@@ -1531,6 +1531,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Note from the AI'**
   String get aiComment;
+
+  /// No description provided for @aiLeftFree.
+  ///
+  /// In en, this message translates to:
+  /// **'This month: {left} left (free plan: {limit} per month)'**
+  String aiLeftFree(int left, int limit);
+
+  /// No description provided for @aiLeftPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'This month: {left} left (premium)'**
+  String aiLeftPremium(int left);
+
+  /// No description provided for @aiPrecise.
+  ///
+  /// In en, this message translates to:
+  /// **'Read precisely'**
+  String get aiPrecise;
+
+  /// No description provided for @aiPreciseHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'For tables with handwritten corrections or detailed shift rosters. {left} left this month'**
+  String aiPreciseHelp(int left);
+
+  /// No description provided for @aiUsedUp.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve used all free reads this month. They reset next month.'**
+  String get aiUsedUp;
+
+  /// No description provided for @aiPreciseUsedUp.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve used all precise reads this month. Turn it off to use a normal read.'**
+  String get aiPreciseUsedUp;
 }
 
 class _AppLocalizationsDelegate

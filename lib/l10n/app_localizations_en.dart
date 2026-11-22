@@ -809,4 +809,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiComment => 'Note from the AI';
+
+  @override
+  String aiLeftFree(int left, int limit) {
+    return 'This month: $left left (free plan: $limit per month)';
+  }
+
+  @override
+  String aiLeftPremium(int left) {
+    return 'This month: $left left (premium)';
+  }
+
+  @override
+  String get aiPrecise => 'Read precisely';
+
+  @override
+  String aiPreciseHelp(int left) {
+    return 'For tables with handwritten corrections or detailed shift rosters. $left left this month';
+  }
+
+  @override
+  String get aiUsedUp =>
+      'You\'ve used all free reads this month. They reset next month.';
+
+  @override
+  String get aiPreciseUsedUp =>
+      'You\'ve used all precise reads this month. Turn it off to use a normal read.';
 }

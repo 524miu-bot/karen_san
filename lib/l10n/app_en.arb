@@ -425,5 +425,35 @@
   "aiFile": "Choose a PDF",
   "aiReading": "AI is reading it (30 seconds to a minute)…",
   "aiFailed": "Couldn't read it. Please retake the photo or try again later.",
-  "aiComment": "Note from the AI"
+  "aiComment": "Note from the AI",
+  "aiLeftFree": "This month: {left} left (free plan: {limit} per month)",
+  "aiLeftPremium": "This month: {left} left (premium)",
+  "aiPrecise": "Read precisely",
+  "aiPreciseHelp": "For tables with handwritten corrections or detailed shift rosters. {left} left this month",
+  "aiUsedUp": "You've used all free reads this month. They reset next month.",
+  "aiPreciseUsedUp": "You've used all precise reads this month. Turn it off to use a normal read.",
+  "@aiLeftFree": {
+    "placeholders": {
+      "left": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@aiLeftPremium": {
+    "placeholders": {
+      "left": {
+        "type": "int"
+      }
+    }
+  },
+  "@aiPreciseHelp": {
+    "placeholders": {
+      "left": {
+        "type": "int"
+      }
+    }
+  }
 }

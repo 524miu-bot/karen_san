@@ -53,4 +53,20 @@ void main() {
     expect(scheduleMimeOf('a.heic'), 'image/jpeg');
     expect(scheduleMimeOf('x', 'image/webp'), 'image/webp');
   });
+
+  test('残り回数（使いすぎてもマイナスにならない）', () {
+    final q = AiQuota.fromMap({
+      'plan': 'premium',
+      'normalUsed': 3,
+      'normalLimit': 200,
+      'preciseUsed': 12,
+      'preciseLimit': 10,
+    });
+    expect(q.isPremium, isTrue);
+    expect(q.normalLeft, 197);
+    expect(q.preciseLeft, 0);
+    final free = AiQuota.fromMap({'normalUsed': 5, 'normalLimit': 5});
+    expect(free.isPremium, isFalse);
+    expect(free.normalLeft, 0);
+  });
 }

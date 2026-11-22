@@ -786,4 +786,28 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aiComment => 'AI からのひとこと';
+
+  @override
+  String aiLeftFree(int left, int limit) {
+    return '今月の残り：あと $left 回（無料版は月 $limit 回まで）';
+  }
+
+  @override
+  String aiLeftPremium(int left) {
+    return '今月の残り：あと $left 回（有料版）';
+  }
+
+  @override
+  String get aiPrecise => '正確に読む';
+
+  @override
+  String aiPreciseHelp(int left) {
+    return '手書きの訂正が多い表や、細かい勤務表に。今月あと $left 回';
+  }
+
+  @override
+  String get aiUsedUp => '今月の無料の読み取りを使い切りました。来月になると、また使えます。';
+
+  @override
+  String get aiPreciseUsedUp => '今月の「正確に読む」を使い切りました。オフにすると、普通の読み取りが使えます。';
 }

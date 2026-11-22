@@ -134,6 +134,38 @@ List<DraftEvent> draftsFromAi(List<dynamic> events) {
   return result;
 }
 
+/// AI 読み取りの今月の回数（サーバーの aiQuota・readSchedule が返す）。
+class AiQuota {
+  const AiQuota({
+    required this.plan,
+    required this.normalUsed,
+    required this.normalLimit,
+    required this.preciseUsed,
+    required this.preciseLimit,
+  });
+
+  factory AiQuota.fromMap(Map<dynamic, dynamic> m) {
+    int n(String k) => (m[k] as num?)?.toInt() ?? 0;
+    return AiQuota(
+      plan: '${m['plan'] ?? 'free'}',
+      normalUsed: n('normalUsed'),
+      normalLimit: n('normalLimit'),
+      preciseUsed: n('preciseUsed'),
+      preciseLimit: n('preciseLimit'),
+    );
+  }
+
+  final String plan;
+  final int normalUsed;
+  final int normalLimit;
+  final int preciseUsed;
+  final int preciseLimit;
+
+  bool get isPremium => plan == 'premium';
+  int get normalLeft => (normalLimit - normalUsed).clamp(0, normalLimit);
+  int get preciseLeft => (preciseLimit - preciseUsed).clamp(0, preciseLimit);
+}
+
 /// ファイル名から種類を決める（写真の部品が種類を教えてくれないとき）。
 String scheduleMimeOf(String name, [String? given]) {
   if (given != null && given.isNotEmpty) return given;
@@ -178,10 +210,35 @@ class _BulkImportPageState extends State<BulkImportPage> {
 
   final _hint = TextEditingController();
   String? _aiComment;
+  AiQuota? _quota;
+  bool _precise = false;
+
+  HttpsCallable _callable(String name) =>
+      FirebaseFunctions.instanceFor(region: 'asia-northeast1').httpsCallable(
+        name,
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 5)),
+      );
+
+  Future<void> _loadQuota() async {
+    try {
+      final res = await _callable('aiQuota').call<Map<String, dynamic>>();
+      if (mounted) setState(() => _quota = AiQuota.fromMap(res.data));
+    } catch (_) {
+      // 回数が見られなくても読み取りはできる（サーバーで確かめる）
+    }
+  }
+
+  /// 今の設定（普通か正確か）で、まだ読み取れるか。回数が分からないときは true。
+  bool get _canRead {
+    final q = _quota;
+    if (q == null) return true;
+    return _precise ? q.preciseLeft > 0 : q.normalLeft > 0;
+  }
 
   @override
   void initState() {
     super.initState();
+    _loadQuota();
     if (widget.startWithCamera) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _pickAndRead(ImageSource.camera),
@@ -236,20 +293,18 @@ class _BulkImportPageState extends State<BulkImportPage> {
       _drafts = null;
     });
     try {
-      final res = await FirebaseFunctions.instanceFor(region: 'asia-northeast1')
-          .httpsCallable(
-            'readSchedule',
-            options: HttpsCallableOptions(timeout: const Duration(minutes: 5)),
-          )
-          .call<Map<String, dynamic>>({
-            'mimeType': mime,
-            'data': base64Encode(bytes),
-            'today': DateFormat('yyyy-MM-dd').format(DateTime.now()),
-            'hint': _hint.text.trim(),
-          });
+      final res = await _callable('readSchedule').call<Map<String, dynamic>>({
+        'mimeType': mime,
+        'data': base64Encode(bytes),
+        'today': DateFormat('yyyy-MM-dd').format(DateTime.now()),
+        'hint': _hint.text.trim(),
+        'precise': _precise,
+      });
       final drafts = draftsFromAi(res.data['events'] as List? ?? const []);
+      final quota = res.data['quota'];
       if (!mounted) return;
       setState(() {
+        if (quota is Map) _quota = AiQuota.fromMap(quota);
         _busy = false;
         _drafts = drafts;
         _selected = {for (var i = 0; i < drafts.length; i++) i};
@@ -265,7 +320,40 @@ class _BulkImportPageState extends State<BulkImportPage> {
             ? e.message
             : l10n.aiFailed;
       });
+      _loadQuota();
     }
+  }
+
+  /// 残り回数と「正確に読む」の切り替え。
+  List<Widget> _quotaWidgets(BuildContext context) {
+    final q = _quota;
+    if (q == null) return const [];
+    final l10n = context.l10n;
+    return [
+      const SizedBox(height: 8),
+      Text(
+        q.isPremium
+            ? l10n.aiLeftPremium(q.normalLeft)
+            : l10n.aiLeftFree(q.normalLeft, q.normalLimit),
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+      if (q.isPremium)
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _precise,
+          onChanged: _busy ? null : (v) => setState(() => _precise = v),
+          title: Text(l10n.aiPrecise),
+          subtitle: Text(l10n.aiPreciseHelp(q.preciseLeft)),
+        ),
+      if (!_canRead)
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            _precise ? l10n.aiPreciseUsedUp : l10n.aiUsedUp,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        ),
+    ];
   }
 
   void _read() {
@@ -364,26 +452,29 @@ class _BulkImportPageState extends State<BulkImportPage> {
                 runSpacing: 8,
                 children: [
                   FilledButton.icon(
-                    onPressed: _busy
+                    onPressed: _busy || !_canRead
                         ? null
                         : () => _pickAndRead(ImageSource.camera),
                     icon: const Icon(Icons.photo_camera),
                     label: Text(l10n.aiCamera),
                   ),
                   OutlinedButton.icon(
-                    onPressed: _busy
+                    onPressed: _busy || !_canRead
                         ? null
                         : () => _pickAndRead(ImageSource.gallery),
                     icon: const Icon(Icons.photo_library_outlined),
                     label: Text(l10n.aiGallery),
                   ),
                   OutlinedButton.icon(
-                    onPressed: _busy ? null : () => _pickAndRead(null),
+                    onPressed: _busy || !_canRead
+                        ? null
+                        : () => _pickAndRead(null),
                     icon: const Icon(Icons.picture_as_pdf_outlined),
                     label: Text(l10n.aiFile),
                   ),
                 ],
               ),
+              ..._quotaWidgets(context),
               if (drafts == null && _busy) ...[
                 const SizedBox(height: 12),
                 const LinearProgressIndicator(),

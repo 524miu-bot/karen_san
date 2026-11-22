@@ -1,8 +1,13 @@
 // 写真・PDF の予定表を Claude で読み取り、予定の一覧にする。
 // アプリは結果を「まとめて追加」の確認画面に出し、人が確認してから登録する。
 
-// 1 人 1 日に読み取れる回数（費用の上限のため）
-const DAILY_LIMIT = 20;
+// 1 か月に読み取れる回数（費用の上限のため）。
+//   free:    無料の人。普通の読み取り（安いモデル）だけ
+//   premium: 有料版の人。普通の読み取りがたっぷり＋「正確に読む」（高いモデル）
+const PLANS = {
+  free: {normal: 5, precise: 0},
+  premium: {normal: 200, precise: 10},
+};
 
 // 送ってよいファイルの種類と大きさ（base64 にする前のおよそのバイト数）
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -108,16 +113,72 @@ function cleanEvents(raw) {
   };
 }
 
-/** その日の回数を 1 増やす。上限を超えていたら false。 */
-async function takeQuota(db, uid, today, limit = DAILY_LIMIT) {
-  const ref = db.collection("ai_usage").doc(uid);
+/** 日本時間の今月（例: 2026-11）。端末の日付は使わない（変えれば回数が戻せてしまうため）。 */
+function monthKey(now = new Date()) {
+  return new Date(now.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 7);
+}
+
+/** 今月の使った回数と残り。bonus は動画を見て増えた回数（あとで使う）。 */
+function quotaOf(data, plan, month) {
+  const d = data && data.month === month ? data : {};
+  const p = PLANS[plan] || PLANS.free;
+  const normalUsed = d.normal || 0;
+  const preciseUsed = d.precise || 0;
+  const bonus = d.bonus || 0;
+  return {
+    plan: PLANS[plan] ? plan : "free",
+    month,
+    normalUsed,
+    normalLimit: p.normal + bonus,
+    preciseUsed,
+    preciseLimit: p.precise,
+  };
+}
+
+function usageRef(db, uid) {
+  return db.collection("ai_usage").doc(uid);
+}
+
+/** 今月の回数を見る。 */
+async function getQuota(db, uid, plan, month = monthKey()) {
+  const snap = await usageRef(db, uid).get();
+  return quotaOf(snap.exists ? snap.data() : null, plan, month);
+}
+
+/**
+ * 回数を 1 使う。残りがなければ null。使ったあとの回数を返す。
+ * kind は "normal"（普通）か "precise"（正確に読む）。
+ */
+async function takeQuota(db, uid, plan, kind, month = monthKey()) {
+  const ref = usageRef(db, uid);
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
-    const d = snap.exists ? snap.data() : {};
-    const count = d.date === today ? (d.count || 0) : 0;
-    if (count >= limit) return false;
-    tx.set(ref, {date: today, count: count + 1});
-    return true;
+    const data = snap.exists ? snap.data() : null;
+    const q = quotaOf(data, plan, month);
+    const used = kind === "precise" ? q.preciseUsed : q.normalUsed;
+    const limit = kind === "precise" ? q.preciseLimit : q.normalLimit;
+    if (used >= limit) return null;
+    const d = data && data.month === month ? data : {};
+    const next = {
+      month,
+      normal: q.normalUsed + (kind === "normal" ? 1 : 0),
+      precise: q.preciseUsed + (kind === "precise" ? 1 : 0),
+      bonus: d.bonus || 0,
+    };
+    tx.set(ref, next);
+    return quotaOf(next, plan, month);
+  });
+}
+
+/** 読み取りに失敗したときに、使った 1 回を戻す。 */
+async function refundQuota(db, uid, plan, kind, month = monthKey()) {
+  const ref = usageRef(db, uid);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const data = snap.exists ? snap.data() : null;
+    if (!data || data.month !== month) return;
+    const field = kind === "precise" ? "precise" : "normal";
+    tx.set(ref, {...data, [field]: Math.max(0, (data[field] || 0) - 1)});
   });
 }
 
@@ -148,7 +209,11 @@ async function readSchedule({client, model, mimeType, data, today, hint}) {
 }
 
 module.exports = {
-  DAILY_LIMIT,
+  PLANS,
+  monthKey,
+  quotaOf,
+  getQuota,
+  refundQuota,
   buildPrompt,
   fileBlock,
   cleanEvents,

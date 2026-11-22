@@ -90,9 +90,34 @@ exports.deleteAccount = onCall({region: "asia-northeast1"}, async (request) => {
 // 写真・PDF の予定表を AI（Claude）で読み取る。
 // Anthropic の API キーは Secret Manager に保存する（firebase functions:secrets:set ANTHROPIC_API_KEY）
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
-// 使うモデル（functions/.env の AI_MODEL で変えられる）
-const AI_MODEL = defineString("AI_MODEL", {default: "claude-opus-5-5"});
+// 普通の読み取りと「正確に読む」で使うモデル（functions/.env で変えられる）
+const AI_MODEL = defineString("AI_MODEL", {default: "claude-haiku-5-5"});
+const AI_MODEL_PRECISE =
+  defineString("AI_MODEL_PRECISE", {default: "claude-opus-5-5"});
+// 課金の仕組みができるまで、有料版として扱う人の uid（カンマ区切り。家族のテスト用）
+const PREMIUM_UIDS = defineString("PREMIUM_UIDS", {default: ""});
 const aiImport = require("./ai_import");
+
+/** 有料版かどうか。entitlements/{uid} はサーバーだけが書く（アプリ内課金の確認後）。 */
+async function planOf(uid) {
+  const testers = PREMIUM_UIDS.value().split(",").map((s) => s.trim());
+  if (testers.includes(uid)) return "premium";
+  const snap = await getFirestore().collection("entitlements").doc(uid).get();
+  const until = snap.exists && snap.data().premiumUntil;
+  return until && until.toMillis() > Date.now() ? "premium" : "free";
+}
+
+function requireUid(request) {
+  const uid = request.auth && request.auth.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "ログインが必要です");
+  return uid;
+}
+
+// 今月の残り回数（「まとめて追加」の画面に出す）
+exports.aiQuota = onCall({region: "asia-northeast1"}, async (request) => {
+  const uid = requireUid(request);
+  return aiImport.getQuota(getFirestore(), uid, await planOf(uid));
+});
 
 exports.readSchedule = onCall(
     {
@@ -102,9 +127,8 @@ exports.readSchedule = onCall(
       memory: "512MiB",
     },
     async (request) => {
-      const uid = request.auth && request.auth.uid;
-      if (!uid) throw new HttpsError("unauthenticated", "ログインが必要です");
-      const {mimeType, data, today, hint} = request.data || {};
+      const uid = requireUid(request);
+      const {mimeType, data, today, hint, precise} = request.data || {};
       const day = /^\d{4}-\d{2}-\d{2}$/.test(today || "") ?
         today : new Date().toISOString().slice(0, 10);
       try {
@@ -112,30 +136,41 @@ exports.readSchedule = onCall(
       } catch (e) {
         throw new HttpsError("invalid-argument", e.message);
       }
-      const ok = await aiImport.takeQuota(getFirestore(), uid, day);
-      if (!ok) {
-        throw new HttpsError("resource-exhausted",
-            `AI の読み取りは 1 日 ${aiImport.DAILY_LIMIT} 回までです。明日またお試しください。`);
+      const db = getFirestore();
+      const plan = await planOf(uid);
+      const kind = precise === true ? "precise" : "normal";
+      if (kind === "precise" && plan !== "premium") {
+        throw new HttpsError("permission-denied",
+            "「正確に読む」は有料版の機能です。");
+      }
+      const quota = await aiImport.takeQuota(db, uid, plan, kind);
+      if (!quota) {
+        throw new HttpsError("resource-exhausted", kind === "precise" ?
+          "今月の「正確に読む」は使い切りました。来月またお使いください。" :
+          "今月の AI 読み取りの回数を使い切りました。来月またお使いください。");
       }
       const Anthropic = require("@anthropic-ai/sdk");
       const client = new Anthropic({apiKey: ANTHROPIC_API_KEY.value()});
+      const model = kind === "precise" ? AI_MODEL_PRECISE.value() : AI_MODEL.value();
       try {
         const {result, usage} = await aiImport.readSchedule({
           client,
-          model: AI_MODEL.value(),
+          model,
           mimeType,
           data,
           today: day,
           hint: String(hint || "").slice(0, 1000),
         });
         logger.info("予定表を読み取り", {
-          uid, count: result.events.length,
+          uid, plan, kind, model, count: result.events.length,
           input: usage.input_tokens, output: usage.output_tokens,
         });
-        return result;
+        return {...result, quota};
       } catch (e) {
-        logger.error("予定表の読み取りに失敗", {uid, message: e.message});
-        throw new HttpsError("internal", "読み取れませんでした。写真を撮り直すか、時間をおいてお試しください。");
+        logger.error("予定表の読み取りに失敗", {uid, model, message: e.message});
+        await aiImport.refundQuota(db, uid, plan, kind).catch(() => {});
+        throw new HttpsError("internal",
+            "読み取れませんでした。写真を撮り直すか、時間をおいてお試しください。");
       }
     },
 );
