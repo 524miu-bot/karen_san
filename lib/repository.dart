@@ -177,6 +177,81 @@ class Repository {
   Future<void> deleteEvent(Place place, CalendarEvent event) =>
       _planner(place, event.kind, 'events').doc(event.id).delete();
 
+  // ---- まとめて追加（あとで取り消せるよう、1 回分を記録する） ----
+  // users/{uid}/imports/{id} … { createdAt, source, events: [{k, id}], titles, from, to }
+
+  CollectionReference<Map<String, dynamic>> _imports(String uid) =>
+      _userDoc(uid).collection('imports');
+
+  /// 予定をまとめて登録し、取り消し用の記録も残す。記録の ID を返す。
+  Future<String> addEventsAsImport(
+    Place place,
+    List<CalendarEvent> events, {
+    required String source,
+  }) async {
+    final record = _imports(place.uid).doc();
+    final refs =
+        <({CalendarKind kind, DocumentReference<Map<String, dynamic>> ref})>[
+          for (final e in events)
+            (kind: e.kind, ref: _planner(place, e.kind, 'events').doc()),
+        ];
+    final starts = [for (final e in events) e.start]..sort();
+    // 1 回の書き込みは 500 件までなので、分けて書く（記録は最後に書く）
+    const chunk = 400;
+    for (var i = 0; i < events.length; i += chunk) {
+      final batch = _db.batch();
+      for (var j = i; j < min(i + chunk, events.length); j++) {
+        batch.set(refs[j].ref, {
+          ...events[j].toMap(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'importId': record.id,
+        });
+      }
+      await batch.commit();
+    }
+    await record.set({
+      'createdAt': FieldValue.serverTimestamp(),
+      'source': source,
+      'events': [
+        for (final r in refs)
+          {
+            'k': r.kind == CalendarKind.work ? 'work' : 'family',
+            'id': r.ref.id,
+          },
+      ],
+      'titles': [for (final e in events.take(3)) e.title],
+      if (starts.isNotEmpty) 'from': Timestamp.fromDate(starts.first),
+      if (starts.isNotEmpty) 'to': Timestamp.fromDate(starts.last),
+    });
+    return record.id;
+  }
+
+  /// 最近のまとめて追加（新しい順）。
+  Stream<List<ImportRecord>> watchImports(String uid) => _imports(uid)
+      .orderBy('createdAt', descending: true)
+      .limit(30)
+      .snapshots()
+      .map(
+        (q) => [for (final d in q.docs) ImportRecord.fromMap(d.id, d.data())],
+      );
+
+  /// まとめて追加した予定を、まとめて消す（あとで直した予定も消える）。
+  Future<void> undoImport(Place place, String importId) async {
+    final doc = await _imports(place.uid).doc(importId).get();
+    final data = doc.data();
+    if (data == null) return;
+    final rec = ImportRecord.fromMap(doc.id, data);
+    const chunk = 400;
+    for (var i = 0; i < rec.events.length; i += chunk) {
+      final batch = _db.batch();
+      for (final e in rec.events.skip(i).take(chunk)) {
+        batch.delete(_planner(place, e.kind, 'events').doc(e.id));
+      }
+      await batch.commit();
+    }
+    await doc.reference.delete();
+  }
+
   // ---- 1 週間のルーティーン ----
 
   Stream<List<Routine>> watchRoutines(Place place, CalendarKind kind) =>

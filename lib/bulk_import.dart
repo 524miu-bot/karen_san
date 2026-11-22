@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'calendar_settings_page.dart';
 import 'categories.dart';
 import 'family_settings_page.dart';
+import 'import_history_page.dart';
 import 'l10n.dart';
 import 'models.dart';
 import 'repository.dart';
@@ -207,6 +208,12 @@ class _BulkImportPageState extends State<BulkImportPage> {
   CalendarKind _kind = CalendarKind.family;
   late String _ownerId = FirebaseAuth.instance.currentUser!.uid;
   bool _busy = false;
+
+  /// 確認画面の予定が写真（AI）からか、文字からか
+  bool _fromAi = false;
+
+  /// いま登録した 1 回分（取り消し用）
+  String? _lastImportId;
   String? _status;
 
   final _hint = TextEditingController();
@@ -309,6 +316,8 @@ class _BulkImportPageState extends State<BulkImportPage> {
         if (quota is Map) _quota = AiQuota.fromMap(quota);
         _busy = false;
         _drafts = drafts;
+        _fromAi = true;
+        _lastImportId = null;
         _selected = {for (var i = 0; i < drafts.length; i++) i};
         _errors = [];
         _aiComment = '${res.data['comment'] ?? ''}'.trim();
@@ -363,6 +372,8 @@ class _BulkImportPageState extends State<BulkImportPage> {
     final drafts = parseBulkEvents(_text.text, errors: errors);
     setState(() {
       _drafts = drafts;
+      _fromAi = false;
+      _lastImportId = null;
       _selected = {for (var i = 0; i < drafts.length; i++) i};
       _errors = errors;
       _status = null;
@@ -375,39 +386,64 @@ class _BulkImportPageState extends State<BulkImportPage> {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final l10n = context.l10n;
     setState(() => _busy = true);
-    var saved = 0;
+    final events = [
+      for (final i in _selected.toList()..sort())
+        CalendarEvent(
+          title: drafts[i].title,
+          start: drafts[i].start,
+          end: drafts[i].end,
+          allDay: drafts[i].allDay,
+          note: drafts[i].note,
+          location: drafts[i].location,
+          createdBy: uid,
+          createdByName: widget.family.nameOf(uid),
+          ownerId: _kind == CalendarKind.work ? '' : _ownerId,
+          kind: _kind,
+          categoryId: _categoryId,
+        ),
+    ];
     try {
-      for (final i in _selected.toList()..sort()) {
-        final d = drafts[i];
-        await Repository.instance.saveEvent(
-          widget.place,
-          CalendarEvent(
-            title: d.title,
-            start: d.start,
-            end: d.end,
-            allDay: d.allDay,
-            note: d.note,
-            location: d.location,
-            createdBy: uid,
-            createdByName: widget.family.nameOf(uid),
-            ownerId: _kind == CalendarKind.work ? '' : _ownerId,
-            kind: _kind,
-            categoryId: _categoryId,
-          ),
-        );
-        saved++;
-      }
+      final id = await Repository.instance.addEventsAsImport(
+        widget.place,
+        events,
+        source: _fromAi ? 'photo' : 'text',
+      );
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _status = l10n.bulkSaved(saved);
+        _status = l10n.bulkSaved(events.length);
+        _lastImportId = id;
         _drafts = null;
         _text.clear();
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _busy = false;
-        _status = l10n.bulkSaveFailed(saved, '$e');
+        _status = l10n.bulkSaveFailed(0, '$e');
+      });
+    }
+  }
+
+  /// いま登録した分を取り消す。
+  Future<void> _undoLast() async {
+    final id = _lastImportId;
+    if (id == null) return;
+    final l10n = context.l10n;
+    setState(() => _busy = true);
+    try {
+      await Repository.instance.undoImport(widget.place, id);
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _lastImportId = null;
+        _status = l10n.importUndone;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _status = l10n.importUndoFailed('$e');
       });
     }
   }
@@ -554,7 +590,20 @@ class _BulkImportPageState extends State<BulkImportPage> {
     final l10n = context.l10n;
     final drafts = _drafts;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.bulkTitle)),
+      appBar: AppBar(
+        title: Text(l10n.bulkTitle),
+        actions: [
+          IconButton(
+            tooltip: l10n.importHistoryTitle,
+            icon: const Icon(Icons.history),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ImportHistoryPage(place: widget.place),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
@@ -616,6 +665,25 @@ class _BulkImportPageState extends State<BulkImportPage> {
               if (drafts == null && _status != null) ...[
                 const SizedBox(height: 8),
                 Text(_status!),
+              ],
+              if (drafts == null && _lastImportId != null) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : _undoLast,
+                      icon: const Icon(Icons.undo),
+                      label: Text(l10n.importUndoNow),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      icon: const Icon(Icons.calendar_month_outlined),
+                      label: Text(l10n.importBackToCalendar),
+                    ),
+                  ],
+                ),
               ],
               if (_aiComment != null && _aiComment!.isNotEmpty) ...[
                 const SizedBox(height: 12),

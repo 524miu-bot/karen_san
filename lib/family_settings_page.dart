@@ -6,10 +6,12 @@ import 'account_deletion.dart';
 import 'app_lock.dart';
 import 'calendar_settings_page.dart';
 import 'color_picker.dart';
+import 'import_history_page.dart';
 import 'l10n.dart';
 import 'models.dart';
 import 'repository.dart';
 import 'oshi_page.dart';
+import 'tutorial_page.dart';
 import 'x_import_page.dart';
 
 /// 名前と色を入力するダイアログ。キャンセルなら null。
@@ -280,6 +282,21 @@ class FamilySettingsPage extends StatelessWidget {
                             ),
                           ),
                         ),
+                        ListTile(
+                          leading: const CircleAvatar(
+                            child: Icon(Icons.history),
+                          ),
+                          title: Text(context.l10n.importHistoryTitle),
+                          subtitle: Text(context.l10n.importHistorySubtitle),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ImportHistoryPage(
+                                place: Place(familyId: familyId, uid: uid),
+                              ),
+                            ),
+                          ),
+                        ),
                         const Divider(),
                         _header(context, context.l10n.xDiarySection),
                         ListTile(
@@ -332,6 +349,15 @@ class FamilySettingsPage extends StatelessWidget {
                               );
                             },
                           ),
+                        ),
+                        const Divider(),
+                        ListTile(
+                          leading: const CircleAvatar(
+                            child: Icon(Icons.school_outlined),
+                          ),
+                          title: Text(context.l10n.tutorialOpen),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => TutorialPage.show(context),
                         ),
                         const Divider(),
                         _header(context, context.l10n.accountSection),

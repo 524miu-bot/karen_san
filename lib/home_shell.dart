@@ -8,6 +8,7 @@ import 'models.dart';
 import 'repository.dart';
 import 'routine_page.dart';
 import 'todo_page.dart';
+import 'tutorial_page.dart';
 
 /// ログイン後の画面。下のタブでカレンダー・ルーティーン・TODO・設定を切り替える。
 class HomeShell extends StatefulWidget {
@@ -29,6 +30,15 @@ class _HomeShellState extends State<HomeShell> {
     familyId: widget.familyId,
     uid: widget.user.uid,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    // 初めての人には使い方を見せる
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) TutorialPage.showOnce(context);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

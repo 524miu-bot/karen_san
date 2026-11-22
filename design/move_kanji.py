@@ -71,6 +71,10 @@ blur = cv2.GaussianBlur(out, (3, 3), 0)
 out[edge] = blur[edge]
 
 # 文字シールを小さくして、円の中の左上に収める（はみ出すと「忄」が切れて「亡」に見えるため）
+if len(sys.argv) > 1 and sys.argv[1] == "0":
+    # 文字なしの絵だけ作る
+    cv2.imwrite("icon_notext.png", out)
+    sys.exit()
 sy, sx = np.nonzero(sticker)
 x0, x1, y0, y1 = sx.min(), sx.max() + 1, sy.min(), sy.max() + 1
 size = int(sys.argv[1]) if len(sys.argv) > 1 else 200  # シールの幅（px）

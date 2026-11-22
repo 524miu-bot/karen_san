@@ -843,4 +843,127 @@ class AppLocalizationsEn extends AppLocalizations {
   String bulkTargetSummary(String target) {
     return 'Adding to: $target';
   }
+
+  @override
+  String get importUndoNow => 'Undo what I just added';
+
+  @override
+  String get importBackToCalendar => 'Back to calendar';
+
+  @override
+  String get importUndone =>
+      'Undone. The events were removed from the calendar.';
+
+  @override
+  String importUndoFailed(String error) {
+    return 'Couldn\'t undo: $error';
+  }
+
+  @override
+  String get importHistoryTitle => 'Bulk add history';
+
+  @override
+  String get importHistorySubtitle =>
+      'Undo events you added from a photo or text, all at once';
+
+  @override
+  String get importHistoryHelp =>
+      'Events you added in bulk from a photo or text. If they\'re not what you expected, tap \"Undo\" to remove that batch.';
+
+  @override
+  String get importHistoryEmpty => 'Nothing yet.';
+
+  @override
+  String importCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count events',
+      one: '1 event',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importAddedAt(String when) {
+    return 'Added $when';
+  }
+
+  @override
+  String get importUndo => 'Undo';
+
+  @override
+  String importUndoTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count events',
+      one: '1 event',
+    );
+    return 'Undo $_temp0?';
+  }
+
+  @override
+  String get importUndoBody =>
+      'All events added in this batch will be removed from the calendar, including any you edited later. This can\'t be reversed.';
+
+  @override
+  String get tutorialOpen => 'How to use';
+
+  @override
+  String get tutorialSkip => 'Skip';
+
+  @override
+  String get tutorialBack => 'Back';
+
+  @override
+  String get tutorialNext => 'Next';
+
+  @override
+  String get tutorialStart => 'Get started';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get tutorialWelcomeTitle => 'Welcome to Karen-san';
+
+  @override
+  String get tutorialWelcomeBody =>
+      'Your whole family\'s plans in one calendar.\nKaren-san is here to help with your busy days.';
+
+  @override
+  String get tutorialAddTitle => 'Add events';
+
+  @override
+  String get tutorialAddBody =>
+      'Tap + at the bottom right of the calendar to add an event.\nChoose whose event it is and each person gets their own color.';
+
+  @override
+  String get tutorialPhotoTitle => 'Add many at once from a photo';
+
+  @override
+  String get tutorialPhotoBody =>
+      'Tap 📷 at the top to photograph a schedule or school notice, and AI reads the events.\nYou check them before adding, and can undo the whole batch if it\'s not what you expected.';
+
+  @override
+  String get tutorialCalendarsTitle => 'Family events and private events';
+
+  @override
+  String get tutorialCalendarsBody =>
+      '\"Family\" events are visible to everyone in the family.\nEvents in calendars marked 🔒, like \"Work\", are visible only to you.';
+
+  @override
+  String get tutorialRoutineTitle => 'Routines and to-dos';
+
+  @override
+  String get tutorialRoutineBody =>
+      'Put weekly lessons or trash days in \"Routine\" and they show up on the calendar every week.\nJot down things to do in \"TODO\".';
+
+  @override
+  String get tutorialInviteTitle => 'Invite your family';
+
+  @override
+  String get tutorialInviteBody =>
+      'Share the invite code in \"Settings\" and your family can use the same calendar.\nYou can see this guide anytime from \"How to use\" in Settings.';
 }

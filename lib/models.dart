@@ -237,3 +237,55 @@ class CalendarEvent {
     return start.isBefore(dayEnd) && end.isAfter(dayStart);
   }
 }
+
+/// 「まとめて追加」で一度に登録した予定のまとまり（あとでまとめて取り消すため）。
+/// users/{uid}/imports/{id} に保存する。
+class ImportRecord {
+  const ImportRecord({
+    required this.id,
+    required this.createdAt,
+    required this.source,
+    required this.events,
+    required this.titles,
+    this.from,
+    this.to,
+  });
+
+  final String id;
+  final DateTime? createdAt;
+
+  /// "photo"（写真・PDF を AI で）か "text"（文字を貼り付け）
+  final String source;
+
+  /// 登録した予定の場所と ID
+  final List<({CalendarKind kind, String id})> events;
+
+  /// 最初の数件のタイトル（一覧で見分けるため）
+  final List<String> titles;
+
+  /// 予定の日付の範囲
+  final DateTime? from;
+  final DateTime? to;
+
+  int get count => events.length;
+
+  static ImportRecord fromMap(String id, Map<String, dynamic> m) {
+    DateTime? time(Object? v) => v is Timestamp ? v.toDate() : null;
+    return ImportRecord(
+      id: id,
+      createdAt: time(m['createdAt']),
+      source: m['source'] as String? ?? 'text',
+      events: [
+        for (final e in (m['events'] as List?) ?? const [])
+          if (e is Map && e['id'] is String)
+            (
+              kind: e['k'] == 'work' ? CalendarKind.work : CalendarKind.family,
+              id: e['id'] as String,
+            ),
+      ],
+      titles: [for (final t in (m['titles'] as List?) ?? const []) '$t'],
+      from: time(m['from']),
+      to: time(m['to']),
+    );
+  }
+}

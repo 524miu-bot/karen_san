@@ -1579,6 +1579,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Adding to: {target}'**
   String bulkTargetSummary(String target);
+
+  /// No description provided for @importUndoNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo what I just added'**
+  String get importUndoNow;
+
+  /// No description provided for @importBackToCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to calendar'**
+  String get importBackToCalendar;
+
+  /// No description provided for @importUndone.
+  ///
+  /// In en, this message translates to:
+  /// **'Undone. The events were removed from the calendar.'**
+  String get importUndone;
+
+  /// No description provided for @importUndoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t undo: {error}'**
+  String importUndoFailed(String error);
+
+  /// No description provided for @importHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk add history'**
+  String get importHistoryTitle;
+
+  /// No description provided for @importHistorySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo events you added from a photo or text, all at once'**
+  String get importHistorySubtitle;
+
+  /// No description provided for @importHistoryHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Events you added in bulk from a photo or text. If they\'re not what you expected, tap \"Undo\" to remove that batch.'**
+  String get importHistoryHelp;
+
+  /// No description provided for @importHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing yet.'**
+  String get importHistoryEmpty;
+
+  /// No description provided for @importCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 event} other{{count} events}}'**
+  String importCount(int count);
+
+  /// No description provided for @importAddedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {when}'**
+  String importAddedAt(String when);
+
+  /// No description provided for @importUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get importUndo;
+
+  /// No description provided for @importUndoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo {count, plural, =1{1 event} other{{count} events}}?'**
+  String importUndoTitle(int count);
+
+  /// No description provided for @importUndoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'All events added in this batch will be removed from the calendar, including any you edited later. This can\'t be reversed.'**
+  String get importUndoBody;
+
+  /// No description provided for @tutorialOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'How to use'**
+  String get tutorialOpen;
+
+  /// No description provided for @tutorialSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get tutorialSkip;
+
+  /// No description provided for @tutorialBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get tutorialBack;
+
+  /// No description provided for @tutorialNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get tutorialNext;
+
+  /// No description provided for @tutorialStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get tutorialStart;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @tutorialWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Karen-san'**
+  String get tutorialWelcomeTitle;
+
+  /// No description provided for @tutorialWelcomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your whole family\'s plans in one calendar.\nKaren-san is here to help with your busy days.'**
+  String get tutorialWelcomeBody;
+
+  /// No description provided for @tutorialAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add events'**
+  String get tutorialAddTitle;
+
+  /// No description provided for @tutorialAddBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + at the bottom right of the calendar to add an event.\nChoose whose event it is and each person gets their own color.'**
+  String get tutorialAddBody;
+
+  /// No description provided for @tutorialPhotoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add many at once from a photo'**
+  String get tutorialPhotoTitle;
+
+  /// No description provided for @tutorialPhotoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap 📷 at the top to photograph a schedule or school notice, and AI reads the events.\nYou check them before adding, and can undo the whole batch if it\'s not what you expected.'**
+  String get tutorialPhotoBody;
+
+  /// No description provided for @tutorialCalendarsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Family events and private events'**
+  String get tutorialCalendarsTitle;
+
+  /// No description provided for @tutorialCalendarsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"Family\" events are visible to everyone in the family.\nEvents in calendars marked 🔒, like \"Work\", are visible only to you.'**
+  String get tutorialCalendarsBody;
+
+  /// No description provided for @tutorialRoutineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Routines and to-dos'**
+  String get tutorialRoutineTitle;
+
+  /// No description provided for @tutorialRoutineBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Put weekly lessons or trash days in \"Routine\" and they show up on the calendar every week.\nJot down things to do in \"TODO\".'**
+  String get tutorialRoutineBody;
+
+  /// No description provided for @tutorialInviteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite your family'**
+  String get tutorialInviteTitle;
+
+  /// No description provided for @tutorialInviteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Share the invite code in \"Settings\" and your family can use the same calendar.\nYou can see this guide anytime from \"How to use\" in Settings.'**
+  String get tutorialInviteBody;
 }
 
 class _AppLocalizationsDelegate

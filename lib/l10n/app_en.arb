@@ -464,5 +464,64 @@
         "type": "String"
       }
     }
+  },
+  "importUndoNow": "Undo what I just added",
+  "importBackToCalendar": "Back to calendar",
+  "importUndone": "Undone. The events were removed from the calendar.",
+  "importUndoFailed": "Couldn't undo: {error}",
+  "importHistoryTitle": "Bulk add history",
+  "importHistorySubtitle": "Undo events you added from a photo or text, all at once",
+  "importHistoryHelp": "Events you added in bulk from a photo or text. If they're not what you expected, tap \"Undo\" to remove that batch.",
+  "importHistoryEmpty": "Nothing yet.",
+  "importCount": "{count, plural, =1{1 event} other{{count} events}}",
+  "importAddedAt": "Added {when}",
+  "importUndo": "Undo",
+  "importUndoTitle": "Undo {count, plural, =1{1 event} other{{count} events}}?",
+  "importUndoBody": "All events added in this batch will be removed from the calendar, including any you edited later. This can't be reversed.",
+  "tutorialOpen": "How to use",
+  "tutorialSkip": "Skip",
+  "tutorialBack": "Back",
+  "tutorialNext": "Next",
+  "tutorialStart": "Get started",
+  "close": "Close",
+  "tutorialWelcomeTitle": "Welcome to Karen-san",
+  "tutorialWelcomeBody": "Your whole family's plans in one calendar.\nKaren-san is here to help with your busy days.",
+  "tutorialAddTitle": "Add events",
+  "tutorialAddBody": "Tap + at the bottom right of the calendar to add an event.\nChoose whose event it is and each person gets their own color.",
+  "tutorialPhotoTitle": "Add many at once from a photo",
+  "tutorialPhotoBody": "Tap 📷 at the top to photograph a schedule or school notice, and AI reads the events.\nYou check them before adding, and can undo the whole batch if it's not what you expected.",
+  "tutorialCalendarsTitle": "Family events and private events",
+  "tutorialCalendarsBody": "\"Family\" events are visible to everyone in the family.\nEvents in calendars marked 🔒, like \"Work\", are visible only to you.",
+  "tutorialRoutineTitle": "Routines and to-dos",
+  "tutorialRoutineBody": "Put weekly lessons or trash days in \"Routine\" and they show up on the calendar every week.\nJot down things to do in \"TODO\".",
+  "tutorialInviteTitle": "Invite your family",
+  "tutorialInviteBody": "Share the invite code in \"Settings\" and your family can use the same calendar.\nYou can see this guide anytime from \"How to use\" in Settings.",
+  "@importUndoFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@importCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@importAddedAt": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "@importUndoTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

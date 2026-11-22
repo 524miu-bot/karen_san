@@ -818,4 +818,113 @@ class AppLocalizationsJa extends AppLocalizations {
   String bulkTargetSummary(String target) {
     return '入れる先：$target';
   }
+
+  @override
+  String get importUndoNow => 'いま登録した予定を取り消す';
+
+  @override
+  String get importBackToCalendar => 'カレンダーに戻る';
+
+  @override
+  String get importUndone => '取り消しました。カレンダーから消えました。';
+
+  @override
+  String importUndoFailed(String error) {
+    return '取り消せませんでした：$error';
+  }
+
+  @override
+  String get importHistoryTitle => 'まとめて追加の履歴';
+
+  @override
+  String get importHistorySubtitle => '写真や文字でまとめて入れた予定を、あとからまとめて取り消せます';
+
+  @override
+  String get importHistoryHelp =>
+      '写真や文字でまとめて追加した予定です。思っていたのと違ったら「取り消す」で、その回の予定をまとめて消せます。';
+
+  @override
+  String get importHistoryEmpty => 'まだありません。';
+
+  @override
+  String importCount(int count) {
+    return '$count 件';
+  }
+
+  @override
+  String importAddedAt(String when) {
+    return '$when に追加';
+  }
+
+  @override
+  String get importUndo => '取り消す';
+
+  @override
+  String importUndoTitle(int count) {
+    return '$count 件の予定を取り消しますか？';
+  }
+
+  @override
+  String get importUndoBody =>
+      'この回に追加した予定を、カレンダーからまとめて消します。あとで直した予定も消えます。元には戻せません。';
+
+  @override
+  String get tutorialOpen => '使い方を見る';
+
+  @override
+  String get tutorialSkip => 'スキップ';
+
+  @override
+  String get tutorialBack => '戻る';
+
+  @override
+  String get tutorialNext => '次へ';
+
+  @override
+  String get tutorialStart => 'はじめる';
+
+  @override
+  String get close => '閉じる';
+
+  @override
+  String get tutorialWelcomeTitle => 'カレンさんへようこそ';
+
+  @override
+  String get tutorialWelcomeBody =>
+      '家族みんなの予定を、\nひとつのカレンダーで。\nいそがしい毎日を、\nカレンさんがお手伝いします。';
+
+  @override
+  String get tutorialAddTitle => '予定を入れる';
+
+  @override
+  String get tutorialAddBody =>
+      'カレンダーの右下の ＋ で\n予定を追加します。\n「誰の予定？」を選ぶと、\n人ごとの色で見分けられます。';
+
+  @override
+  String get tutorialPhotoTitle => '写真で一気に入れる';
+
+  @override
+  String get tutorialPhotoBody =>
+      '上の 📷 で、予定表や\n学校のプリントを撮ると、\nAI が予定を読み取ります。\n登録する前に確認できて、\n違ったら「取り消す」で\nまとめて消せます。';
+
+  @override
+  String get tutorialCalendarsTitle => '家族の予定と\n自分だけの予定';
+
+  @override
+  String get tutorialCalendarsBody =>
+      '「家族」の予定は、\n家族みんなに見えます。\n「仕事」など 🔒 が付いた\nカレンダーの予定は、\n自分にしか見えません。';
+
+  @override
+  String get tutorialRoutineTitle => 'ルーティーンと TODO';
+
+  @override
+  String get tutorialRoutineBody =>
+      '毎週の習い事やゴミの日は\n「ルーティーン」に入れると、\n毎週カレンダーに出ます。\nやることは「TODO」に\nメモできます。';
+
+  @override
+  String get tutorialInviteTitle => '家族を招待する';
+
+  @override
+  String get tutorialInviteBody =>
+      '「設定」の招待コードを\n家族に伝えると、\n同じカレンダーを一緒に使えます。\n\nこの説明は「設定」の\n「使い方を見る」から\nいつでも見られます。';
 }

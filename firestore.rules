@@ -39,10 +39,11 @@ service cloud.firestore {
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
 
-      // 本人だけのデータ：取り込んだ X の投稿（xdays）、仕事の予定・ルーティーン・TODO（work_…）
+      // 本人だけのデータ：取り込んだ X の投稿（xdays）、仕事の予定・ルーティーン・TODO（work_…）、
+      // まとめて追加の記録（imports。あとで取り消すため）
       match /{collection}/{docId} {
         allow read, write: if signedIn() && request.auth.uid == uid
-          && collection in ['xdays', 'work_events', 'work_routines', 'work_todos'];
+          && collection in ['xdays', 'work_events', 'work_routines', 'work_todos', 'imports'];
       }
     }
 
