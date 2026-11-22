@@ -1,6 +1,8 @@
 # 「忙」を右上から左上へ動かす。右上は周りの色で埋め、円の枠を描き直す。
 # karen_busy_original.webp を icon_src.png（RGB）にしてから動かすと icon_new.png ができる
 # （これを karen_busy.png にした）。numpy と opencv-python が要る。
+import sys
+
 import cv2
 import numpy as np
 
@@ -68,16 +70,34 @@ edge = hm & (np.abs(dist - inner) < 1.5) | hm & (np.abs(dist - outer) < 1.5)
 blur = cv2.GaussianBlur(out, (3, 3), 0)
 out[edge] = blur[edge]
 
-# 文字シールを左上へ（左右で同じだけ余白をとる）
-x0, x1, y0, y1 = xs.min(), xs.max(), ys.min(), ys.max()
-nx0 = w - 1 - x1
-dx = nx0 - x0
-alpha = cv2.GaussianBlur(sticker.astype(np.float32), (5, 5), 0)
-M = np.float32([[1, 0, dx], [0, 1, 0]])
-moved = cv2.warpAffine(src, M, (w, h))
-alpha = cv2.warpAffine(alpha, M, (w, h))[:, :, None]
-out = (moved * alpha + out * (1 - alpha)).astype(np.uint8)
+# 文字シールを小さくして、円の中の左上に収める（はみ出すと「忄」が切れて「亡」に見えるため）
+sy, sx = np.nonzero(sticker)
+x0, x1, y0, y1 = sx.min(), sx.max() + 1, sy.min(), sy.max() + 1
+size = int(sys.argv[1]) if len(sys.argv) > 1 else 200  # シールの幅（px）
+margin = int(sys.argv[2]) if len(sys.argv) > 2 else 22  # 円の枠の内側からのすき間
+scale = size / (x1 - x0)
+sw, sh = size, int(round((y1 - y0) * scale))
+patch = cv2.resize(src[y0:y1, x0:x1], (sw, sh), interpolation=cv2.INTER_AREA)
+pa = cv2.resize(cv2.GaussianBlur(sticker.astype(np.float32), (5, 5), 0)[y0:y1, x0:x1],
+                (sw, sh), interpolation=cv2.INTER_AREA)
+# 文字（白いふち込み）の点がすべて円の内側（枠から margin だけ内）に入る範囲で、
+# いちばん左上に寄せる
+pys, pxs = np.nonzero(pa > 0.3)
+best = None
+for py in range(0, h // 2):
+    for px in range(0, w // 2):
+        if best is not None and px + py >= best[0]:
+            break
+        dd = np.hypot(pxs + px - cx, pys + py - cy)
+        if dd.max() <= inner - margin:
+            best = (px + py, px, py)
+            break
+_, px, py = best
+print("sticker", size, "at", px, py)
+region = out[py:py + sh, px:px + sw].astype(np.float32)
+a3 = pa[:, :, None]
+out[py:py + sh, px:px + sw] = (patch * a3 + region * (1 - a3)).astype(np.uint8)
 
 cv2.imwrite("icon_new.png", out)
 cv2.imwrite("tr_after.png", out[40:420, 620:1024])
-cv2.imwrite("tl_after.png", out[40:420, 0:404])
+cv2.imwrite("tl_after.png", out[0:512, 0:512])
