@@ -61,3 +61,4 @@ functions/.secret.local
 
 # Claude のローカル設定
 .claude/
+photos/
